@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: social-behavior-analysis
+Version: 0.0.3
+Summary: Package to facilitate analysis of DLC social behavior output
+Home-page: https://github.com/bendevlin18/social-behavior-analysis
+Author: Ben Devlin 
+Author-email: benjamin.devlin@duke.edu
+License: UNKNOWN
+Description: 'This is the long description of the package'
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
