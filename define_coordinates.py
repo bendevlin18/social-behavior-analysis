@@ -12,11 +12,21 @@ from tkinter import *
 from tkinter import filedialog
 
 root = Tk()
-root.filename = filedialog.askopenfilename(initialdir = '/', title = 'Select the video to annotate')
-
-path = root.filename
 
 direc = os.getcwd()
+
+video_filename = 0
+
+def select_video():
+    video_filename = filedialog.askopenfilename(initialdir = direc, title = 'Select the video to annotate')
+    return video_filename
+
+select_vid_btn = Button(root, text = 'Select A Video to Annotate', command = select_video).pack()
+
+while video_filename == 0:
+    status = 'Waiting for file to open'
+
+path = video_filename
 
 if not os.path.exists(direc + '\\coordinates'):
     os.mkdir(direc + '\\coordinates')
@@ -58,3 +68,7 @@ locations = ['x_chamber', 'y_chamber', 'left_side', 'right_side', 'middle']
 
 for location in locations:
     selectROI(location)
+
+
+
+root.mainloop()

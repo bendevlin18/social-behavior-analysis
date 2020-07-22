@@ -1,8 +1,0 @@
-README.md
-setup.py
-social_behavior_analysis/__init__.py
-social_behavior_analysis/social_behavior_analysis.py
-social_behavior_analysis.egg-info/PKG-INFO
-social_behavior_analysis.egg-info/SOURCES.txt
-social_behavior_analysis.egg-info/dependency_links.txt
-social_behavior_analysis.egg-info/top_level.txt
