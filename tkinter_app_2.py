@@ -16,8 +16,7 @@ from tkinter import filedialog
 import tkinter.font as tkFont
 from tkinter import ttk
 from PIL import ImageTk, Image
-from dlc_social_behavior import *
-from new_functions import *
+from analysis_functions_master import *
 from tqdm import tqdm
 
 ####### Creating all of the frames for the GUI #########
@@ -116,7 +115,7 @@ def create_coord_window():
         coordinate_output = Label(root, text = """
         
         Coordinates Imported Successfully!
-        If you would like to adjust them, just redo step 1!"""
+        If they need adjusted, just redo step 1!"""
         
         , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
         coordinates = [possible_places, extra_coords]
@@ -146,7 +145,12 @@ def show_heatmaps():
         plt.savefig(main_dir + '\\heatmaps\\' + videos[i] + '.png')
         plt.close()
 
-        heatmap_output = Label(root, text = 'All Finished! Heatmaps are now saved in the heatmaps folder in the main analysis directory', font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
+        heatmap_output = Label(root, text = """
+        
+        All Finished! 
+        Heatmaps are now saved in the heatmaps folder in the main analysis directory"""
+        
+        , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
 
 main_heatmap_generator_btn = Button(tab_frame, text = 'Step 3: Create Heatmap / Validate Labels (OPTIONAL)', command = show_heatmaps).pack(side = 'left')
@@ -274,21 +278,24 @@ main_calculate_invest_btn = Button(tab_frame, text = 'Step 5: Calculate Investig
 
 def convert_to_secs():
 
-    ####  SHOULD ADD AN OPTION IN HERE TO IMPORT PREVIOUS DATA ####
-    
+    global new_df
+
+    if main_dir + '\\output.csv':
+        output_df = pd.read_csv(main_dir + '\\output.csv', index_col = 0)
+
+    new_df = pd.DataFrame(columns = output_df.columns, index = output_df.index)
+
     frameRate = np.zeros(shape = len(df_times))
     i = -1
-    global new_df
-    new_df = pd.DataFrame(columns = output_df.columns, index = output_df.index)
     for index, values in df_times.iterrows():
         i = i + 1
         cap = cv2.VideoCapture(v_location + '\\' + values['VideoName'] + '.mp4')
         frameRate[i] = cap.get(cv2.CAP_PROP_FPS)
         index = output_df.index[i]
-        new_df.loc[index[0], index[1]] = (output_df.loc[index[0]].loc[index[1]] / frameRate[i]).values
+        new_df.loc[index][1:6] = (output_df.loc[index][1:6] / frameRate[i]).values
     else:
         pass
-        
+    new_df['type'] = output_df['type']
     new_df.to_csv(main_dir + '\\adjusted_output.csv')
     secs_output = Label(root, text = """
     
@@ -299,13 +306,6 @@ def convert_to_secs():
 
 
 convert_2_secs_btn = Button(tab_frame, text = 'Step 6: Convert Investigation times to Seconds', command = convert_to_secs).pack(side = 'left')
-
-
-
-
-
-
-
 
 
 
