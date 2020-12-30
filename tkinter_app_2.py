@@ -51,6 +51,10 @@ main_page_label = Label(header_frame, text = 'Welcome to the main page', font = 
 ######### Button for grabbing the main analysis directory #########
 
 def direc_btn():
+
+    ## I have built this analysis GUI such that there is a single main directory that houses the videos, as well as the output CSV files from DLC ##
+    ## Everything stems from this folder, and this directory location is chosen by the user and saved as a global variable, as everything will be saved within this directory ##
+
     global main_dir
     directory = filedialog.askdirectory(initialdir = os.getcwd(), title = 'Select the analysis directory')
     main_dir = directory
@@ -62,6 +66,10 @@ main_direc_button = Button(direc_frame, text = '...', command = direc_btn).grid(
 ######### Button for grabbing the video directory ##########
 
 def video_dir_btn():
+
+    ## now we are navigating to the subdirectory that has the video mp4s saved in it ##
+    ## this is saved also a global variable, which will allow us to extract these videos for creating heatmaps or plotting frames for annotation ##
+
     global v_location
     v_location = filedialog.askdirectory(initialdir = os.getcwd(), title = 'Select the video directory')
     main_video_location_readout = Label(mp4_frame, text = v_location, bg = 'black', fg = 'white', borderwidth = 5).grid(row = 1, column = 1, sticky='nsew')
@@ -73,12 +81,18 @@ main_video_loc_button = Button(mp4_frame, text = '...', command = video_dir_btn)
 ######### Button for Step 1, which is to annotate the video and define the ROIs #########
 
 def annotate_window():
+
+    ## creating a directory to save the numpy text files that contain coordinates for the annotations made at this step ##
+
     if not os.path.exists(main_dir + '\\coordinates'):
         os.mkdir(main_dir + '\\coordinates')
     frame = grab_video_frame(v_location)
 
+    ## list of the 5 locations I have included for analysis ##
+    ## I would like in the future to have this customizable in the GUI ##
     locations = ['x_chamber', 'y_chamber', 'left_side', 'right_side', 'middle']
 
+    ## loops through the locations in the list, and allow the user to save a polygon annotation as a np text file for each zone ##
     for location in locations:
         selectROI(location, frame, main_dir)
     annotate_output = Label(root, text = 'All Done! Coordinates Saved in Coordinates Directory', font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
@@ -89,6 +103,8 @@ main_annotate_btn = Button(tab_frame, text = 'Step 1: Annotate Video Frame', com
 ########## Button for Step 2, which imports the coordinates and displays them over a representative frame of the video #########
 
 def create_coord_window():
+
+    ## loading in the 5 annotation zones that were created in the last step ##
     
     left_side = np.loadtxt(main_dir + '\\coordinates\\left_side')
     x_chamber = np.loadtxt(main_dir + '\\coordinates\\x_chamber')
@@ -96,7 +112,8 @@ def create_coord_window():
     right_side = np.loadtxt(main_dir + '\\coordinates\\right_side')
     middle = np.loadtxt(main_dir + '\\coordinates\\middle')
     
-    ## calculate the padded interaction zone, that is 40 pixels larger in every direction (than the base of the chamber)
+    ## calculate the padded interaction zone, that is 40 pixels larger in every direction (than the base of the chamber) ##
+    ## In the future I would like to make the padding size flexible based on user input if we think it might need to change ##
 
     x_outer = Polygon(Polygon(x_chamber).buffer(40).exterior).exterior.coords.xy
     y_outer = Polygon(Polygon(y_chamber).buffer(40).exterior).exterior.coords.xy
@@ -105,6 +122,9 @@ def create_coord_window():
     
     x_zone = Polygon(Polygon(x_chamber).buffer(40).exterior)
     y_zone = Polygon(Polygon(y_chamber).buffer(40).exterior)
+
+    ## these two global variables hold the coordinates for the annotated zones (possible_places) ##
+    ## as well as the calculated zones/points necessary for analysis (extra_coords) ##
     
     global possible_places
     possible_places = {'x_zone': x_zone, 'y_zone': y_zone, 'left_side': left_side, 'middle': middle, 'right_side': right_side}
@@ -130,10 +150,14 @@ main_coord_import_btn = Button(tab_frame, text = 'Step 2: Import & Show Coordina
 def show_heatmaps():
     coordinates = [possible_places, extra_coords]
 
+    ## extracting the DLC csv output from the csv_output folder that MUST be in the master analysis directory ##
+    ## creating a heatmaps folder to save the heatmaps for each video ##
+
     videos = os.listdir(main_dir + '\\csv_outputs')
     if not os.path.exists(main_dir + '\\heatmaps'):
         os.mkdir(main_dir + '\\heatmaps')
 
+    ## loop through the lis of videos and 
     for i in range(len(videos)):
 
         df = pd.read_csv(main_dir + '\\csv_outputs\\' + videos[i], header = [1, 2])
@@ -161,10 +185,11 @@ main_heatmap_generator_btn = Button(tab_frame, text = 'Step 3: Create Heatmap / 
 
 def prep_time_df():
 
-    
+    ## function for reading in the time dataframe. this is a separate excel/csv that contains the time that the animal was actually placed in the chamber (this is not always the very start of the video)
     global df_times
     df_times = pd.read_excel(main_dir + '\\start_times.xlsx')
     
+    ## adjusting the timedf with time_df function to calculate start and stop frames
     df_times = time_df(df_times, v_location)
 
     times_output = Label(root, text = """
