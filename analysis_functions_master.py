@@ -22,7 +22,10 @@ from PIL import ImageTk, Image
 def grab_video_frame(v_location):
 
     ## using the cv2 library to open up a video from the analysis directory and create a single frame ##
-    cap = cv2.VideoCapture(v_location + '\\' + os.listdir(v_location)[0])
+
+    cap = os.path.join(v_location, os.listdir(v_location)[0])
+
+    #cap = cv2.VideoCapture(v_location + '\\' + os.listdir(v_location)[0])
     frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frameHeight = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     frameRate = cap.get(cv2.CAP_PROP_FPS)
