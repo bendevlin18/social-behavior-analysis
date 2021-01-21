@@ -85,7 +85,7 @@ def df_time_file_btn():
     ##  ##
     ##  ##
 
-    global df_times
+    global df_times_filename
     df_times_filename = filedialog.askopenfilename(initialdir = os.getcwd(), title = 'Select the excel file with start times')
     start_times_location_readout = Label(df_times_frame, text = df_times_filename, bg = 'black', fg = 'white', borderwidth = 5).grid(row = 1, column = 1, sticky='nsew')
 
@@ -160,7 +160,31 @@ def create_coord_window():
 main_coord_import_btn = Button(tab_frame, text = 'Step 2: Import & Show Coordinate Annotations', command = create_coord_window).pack(side = 'left')
 
 
-######### Button for Step 3, creating heatmaps for every video. This is optional and still in alpha #########
+######### Button for Step 3, preparing the time dataframe #########
+
+def prep_time_df():
+
+    ## function for reading in the time dataframe. this is a separate excel/csv that contains the time that the animal was actually placed in the chamber (this is not always the very start of the video)
+    #global df_times
+    df_times = pd.read_excel(os.path.join(main_dir, df_times_filename))
+    
+    ## adjusting the timedf with time_df function to calculate start and stop frames
+    df_times = time_df(df_times, v_location)
+
+    times_output = Label(root, text = """
+    
+    Time Dataframe Imported Successfully!
+    Now you can calculate investigation times!"""
+    
+    , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
+
+    print(df_times)
+
+
+main_time_df_import_btn = Button(tab_frame, text = 'Step 3: Import and Format Time Dataframe', command = prep_time_df).pack(side = 'left')
+
+
+######### Button for Step 4, creating heatmaps for every video. This is optional and still in alpha #########
 
 def show_heatmaps():
     coordinates = [possible_places, extra_coords]
@@ -192,33 +216,7 @@ def show_heatmaps():
         , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
 
-main_heatmap_generator_btn = Button(tab_frame, text = 'Step 3: Create Heatmap / Validate Labels (OPTIONAL)', command = show_heatmaps).pack(side = 'left')
-
-
-######### Button for Step 4, preparing the time dataframe #########
-
-
-def prep_time_df():
-
-    ## function for reading in the time dataframe. this is a separate excel/csv that contains the time that the animal was actually placed in the chamber (this is not always the very start of the video)
-    #global df_times
-    df_times = pd.read_excel(os.path.join(main_dir, df_times_filename))
-    
-    ## adjusting the timedf with time_df function to calculate start and stop frames
-    df_times = time_df(df_times, v_location)
-
-    times_output = Label(root, text = """
-    
-    Time Dataframe Imported Successfully!
-    Now you can calculate investigation times!"""
-    
-    , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
-
-    print(df_times)
-
-
-main_time_df_import_btn = Button(tab_frame, text = 'Step 4: Import and Format Time Dataframe', command = prep_time_df).pack(side = 'left')
-
+main_heatmap_generator_btn = Button(tab_frame, text = 'Step 4: Create Heatmap / Validate Labels (OPTIONAL)', command = show_heatmaps).pack(side = 'left')
 
 
 
