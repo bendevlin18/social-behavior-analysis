@@ -23,7 +23,7 @@ def grab_video_frame(v_location):
 
     ## using the cv2 library to open up a video from the analysis directory and create a single frame ##
 
-    cap = os.path.join(v_location, os.listdir(v_location)[0])
+    cap = cv2.VideoCapture(os.path.join(v_location, os.listdir(v_location)[0]))
 
     #cap = cv2.VideoCapture(v_location + '\\' + os.listdir(v_location)[0])
     frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))

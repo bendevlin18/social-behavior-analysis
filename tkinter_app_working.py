@@ -152,21 +152,24 @@ def show_heatmaps():
 
     ## extracting the DLC csv output from the csv_output folder that MUST be in the master analysis directory ##
     ## creating a heatmaps folder to save the heatmaps for each video ##
-
-    videos = os.listdir(main_dir + '\\csv_outputs')
-    if not os.path.exists(main_dir + '\\heatmaps'):
-        os.mkdir(main_dir + '\\heatmaps')
+    csv_file_list = os.listdir(os.path.join(main_dir, 'csv_outputs'))
+    videos = []
+    for csv_file in csv_file_list:
+        if '.csv' in file_list:
+            videos = np.append(videos, csv_file)
+    if not os.path.exists(os.path.join(main_dir, 'heatmaps')):
+        os.mkdir(os.path.join(main_dir, 'heatmaps'))
 
     ## loop through the lis of videos and 
     for i in range(len(videos)):
 
-        df = pd.read_csv(main_dir + '\\csv_outputs\\' + videos[i], header = [1, 2])
+        df = pd.read_csv(os.path.join(main_dir, 'csv_outputs', videos[i]), header = [1, 2])
 
         trial_frames = (df_times['StartSocialFrames'][i] + 30, df_times['StopSocialFrames'][i] + 30)
 
         plot_heatmap(coordinates, df, trial_frames)
 
-        plt.savefig(main_dir + '\\heatmaps\\' + videos[i] + '.png')
+        plt.savefig(os.path.join(main_dir, 'heatmaps', videos[i], '.png'))
         plt.close()
 
         heatmap_output = Label(root, text = """
@@ -187,7 +190,7 @@ def prep_time_df():
 
     ## function for reading in the time dataframe. this is a separate excel/csv that contains the time that the animal was actually placed in the chamber (this is not always the very start of the video)
     global df_times
-    df_times = pd.read_excel(main_dir + '\\start_times.xlsx')
+    df_times = pd.read_excel(os.path.join(main_dir, 'start_times.xlsx'))
     
     ## adjusting the timedf with time_df function to calculate start and stop frames
     df_times = time_df(df_times, v_location)
@@ -212,7 +215,7 @@ main_time_df_import_btn = Button(tab_frame, text = 'Step 4: Import and Format Ti
 def calculate_investigation_times(behavior_type = 'Social', bodypart = 'nose', video_suffix = 'DLC_resnet50_social_behavior_allMay27shuffle1_250000.csv'):
 
     final_dict = {}
-    csv_direc = main_dir + '\\csv_outputs\\'
+    csv_direc = os.path.join(main_dir, 'csv_outputs')
 
 
     for i in range(len(df_times)):
@@ -288,7 +291,7 @@ def calculate_investigation_times(behavior_type = 'Social', bodypart = 'nose', v
         output_df.set_index(['index', 'type'], inplace = True)
 
         print('Just finished Video ' + str(i + 1) + ' of ' + str(len(df_times)))
-    output_df.to_csv(main_dir + '\\output.csv')
+    output_df.to_csv(os.path.join(main_dir, 'output.csv'))
 
     invest_output = Label(root, text = """
     
@@ -305,8 +308,8 @@ def convert_to_secs():
 
     global new_df
 
-    if main_dir + '\\output.csv':
-        output_df = pd.read_csv(main_dir + '\\output.csv', index_col = 0)
+    if os.path.join(main_dir, 'output.csv'):
+        output_df = pd.read_csv(os.path.join(main_dir, 'output.csv'), index_col = 0)
 
     new_df = pd.DataFrame(columns = output_df.columns, index = output_df.index)
 
