@@ -38,6 +38,9 @@ img_frame.grid(padx = 10, pady = 10, sticky='nsew')
 mp4_frame = LabelFrame(root, padx = 5, pady = 5)
 mp4_frame.grid(padx = 10, pady = 10, sticky='nsew')
 
+df_times_frame = LabelFrame(root, padx = 5, pady = 5)
+df_times_frame.grid(padx = 10, pady = 10, sticky='nsew')
+
 tab_frame = LabelFrame(root, padx = 5, pady = 5)
 tab_frame.grid(padx = 10, pady = 10, sticky='nsew')
 
@@ -76,6 +79,18 @@ def video_dir_btn():
 
 main_video_loc_label = Label(mp4_frame, text = 'Navigate to the master directory with all the videos').grid(row = 1, column = 0, sticky='nsew')
 main_video_loc_button = Button(mp4_frame, text = '...', command = video_dir_btn).grid(row = 1, column = 2, sticky='nsew')
+
+def df_time_file_btn():
+
+    ##  ##
+    ##  ##
+
+    global df_times
+    df_times_filename = filedialog.askopenfilename(initialdir = os.getcwd(), title = 'Select the excel file with start times')
+    start_times_location_readout = Label(df_times_frame, text = df_times_filename, bg = 'black', fg = 'white', borderwidth = 5).grid(row = 1, column = 1, sticky='nsew')
+
+df_times_loc_label = Label(df_times_frame, text = 'Navigate to the file with the start times').grid(row = 1, column = 0, sticky='nsew')
+df_times_loc_button = Button(df_times_frame, text = '...', command = df_time_file_btn).grid(row = 1, column = 2, sticky='nsew')
 
 
 ######### Button for Step 1, which is to annotate the video and define the ROIs #########
@@ -152,25 +167,22 @@ def show_heatmaps():
 
     ## extracting the DLC csv output from the csv_output folder that MUST be in the master analysis directory ##
     ## creating a heatmaps folder to save the heatmaps for each video ##
-    csv_file_list = os.listdir(os.path.join(main_dir, 'csv_outputs'))
-    videos = []
-    for csv_file in csv_file_list:
-        if '.csv' in file_list:
-            videos = np.append(videos, csv_file)
+    videos = os.listdir(os.path.join(main_dir, 'csv_outputs'))
+
     if not os.path.exists(os.path.join(main_dir, 'heatmaps')):
         os.mkdir(os.path.join(main_dir, 'heatmaps'))
 
-    ## loop through the lis of videos and 
+    ## loop through the list of videos and plot a heatmap on them
     for i in range(len(videos)):
+        if 'csv' in videos[i]:
+            df = pd.read_csv(os.path.join(main_dir, 'csv_outputs', videos[i]), header = [1, 2])
 
-        df = pd.read_csv(os.path.join(main_dir, 'csv_outputs', videos[i]), header = [1, 2])
+            trial_frames = (df_times['StartSocialFrames'][i] + 30, df_times['StopSocialFrames'][i] + 30)
 
-        trial_frames = (df_times['StartSocialFrames'][i] + 30, df_times['StopSocialFrames'][i] + 30)
+            plot_heatmap(coordinates, df, trial_frames)
 
-        plot_heatmap(coordinates, df, trial_frames)
-
-        plt.savefig(os.path.join(main_dir, 'heatmaps', videos[i], '.png'))
-        plt.close()
+            plt.savefig(os.path.join(main_dir, 'heatmaps', videos[i], '.png'))
+            plt.close()
 
         heatmap_output = Label(root, text = """
         
@@ -189,8 +201,8 @@ main_heatmap_generator_btn = Button(tab_frame, text = 'Step 3: Create Heatmap / 
 def prep_time_df():
 
     ## function for reading in the time dataframe. this is a separate excel/csv that contains the time that the animal was actually placed in the chamber (this is not always the very start of the video)
-    global df_times
-    df_times = pd.read_excel(os.path.join(main_dir, 'start_times.xlsx'))
+    #global df_times
+    df_times = pd.read_excel(os.path.join(main_dir, df_times_filename))
     
     ## adjusting the timedf with time_df function to calculate start and stop frames
     df_times = time_df(df_times, v_location)
