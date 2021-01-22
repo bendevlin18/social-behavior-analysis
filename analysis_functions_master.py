@@ -54,7 +54,7 @@ def selectROI(region, frame, main_dir):
 
     fig, ax = plt.subplots()
     ax.imshow(frame)
-    plt.title(region)
+    plt.title(region + ' - Press Q to move to the next location')
 
     ## this is the function that is fed to the polygon selector tool. All I am doing here is saving the coordinates for every polygon drawn to a text file of numpy coordinates ##
     ## this allows me to save them outside of the python kernel, and they can be pulled in later at any point ##
@@ -86,7 +86,7 @@ def plot_coordinates_frame(frame, coordinates):
         ax.imshow(frame)
         plt.xlim(0,1280)
         plt.ylim(0,720)
-        plt.title('Example Coordinate Overlay')
+        plt.title('Example Coordinate Overlay - Press q to quit')
         plt.show()
 
 
