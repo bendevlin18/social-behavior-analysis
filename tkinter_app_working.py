@@ -14,7 +14,7 @@ import os
 from tkinter import *
 from tkinter import filedialog
 import tkinter.font as tkFont
-from tkinter import ttk
+from tkinter import ttk, simpledialog
 from PIL import ImageTk, Image
 from analysis_functions_master import *
 from tqdm import tqdm
@@ -135,7 +135,7 @@ def annotate_window():
         selectROI(location, frame, main_dir)
     annotate_output = Label(root, text = 'All Done! Coordinates Saved in Coordinates Directory', font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
-main_annotate_btn = Button(tab_frame, text = 'Step 1: Annotate Video Frame', command = annotate_window).pack(side = 'left')
+main_annotate_btn = Button(tab_frame, text = '1: Annotate Video Frame', command = annotate_window).pack(side = 'left')
 
 
 ########## Button for Step 2, which imports the coordinates and displays them over a representative frame of the video #########
@@ -180,7 +180,7 @@ def create_coord_window():
 
         plot_coordinates_frame(grab_video_frame(v_location), coordinates)
 
-main_coord_import_btn = Button(tab_frame, text = 'Step 2: Import & Show Coordinate Annotations', command = create_coord_window).pack(side = 'left')
+main_coord_import_btn = Button(tab_frame, text = '2: Import Coordinate Annotations', command = create_coord_window).pack(side = 'left')
 
 
 ######### Button for Step 3, preparing the time dataframe #########
@@ -204,7 +204,7 @@ def prep_time_df():
     print(df_times)
 
 
-main_time_df_import_btn = Button(tab_frame, text = 'Step 3: Import and Format Time Dataframe', command = prep_time_df).pack(side = 'left')
+main_time_df_import_btn = Button(tab_frame, text = '3: Import Time Dataframe', command = prep_time_df).pack(side = 'left')
 
 
 ######### Button for Step 4, creating heatmaps for every video. This is optional and still in alpha #########
@@ -240,14 +240,16 @@ def show_heatmaps():
         , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
 
-main_heatmap_generator_btn = Button(tab_frame, text = 'Step 4: Create Heatmap / Validate Labels (OPTIONAL)', command = show_heatmaps).pack(side = 'left')
+main_heatmap_generator_btn = Button(tab_frame, text = '4: Create Heatmaps (OPTIONAL)', command = show_heatmaps).pack(side = 'left')
 
 
 
 ######### Button for Step 5, which is the main calculation and analysis based on ROIs #########
 
-def calculate_investigation_times(behavior_type = 'Social', bodypart = 'nose', video_suffix = 'DLC_resnet50_social_behavior_allMay27shuffle1_250000.csv'):
+def calculate_investigation_times(behavior_type = 'Social', bodypart = 'nose'):
 
+    global video_suffix
+    video_suffix = simpledialog.askstring('DLC_resnet50_social_behavior_allMay27shuffle1_250000', 'What is the DLC suffix?')
     final_dict = {}
     csv_direc = os.path.join(main_dir, csv_output_folder)
 
@@ -336,7 +338,7 @@ def calculate_investigation_times(behavior_type = 'Social', bodypart = 'nose', v
     
     , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
-main_calculate_invest_btn = Button(tab_frame, text = 'Step 5: Calculate Investigation Times!', command = calculate_investigation_times).pack(side = 'left')
+main_calculate_invest_btn = Button(tab_frame, text = '5: Calculate Investigation Times!', command = calculate_investigation_times).pack(side = 'left')
 
 
 
@@ -369,16 +371,7 @@ def convert_to_secs():
     , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
 
-convert_2_secs_btn = Button(tab_frame, text = 'Step 6: Convert Investigation times to Seconds', command = convert_to_secs).pack(side = 'left')
-
-
-
-
-
-
-
-
-
+convert_2_secs_btn = Button(tab_frame, text = '6: Convert Investigation times to Secs', command = convert_to_secs).pack(side = 'left')
 
 
 
@@ -386,15 +379,23 @@ convert_2_secs_btn = Button(tab_frame, text = 'Step 6: Convert Investigation tim
 ##### Button for step 7 - creating labelled frames that can be stitched into a labelled video #####
 
 
+def export_frames_with_label():
+    video_to_label = filedialog.askopenfilename(initialdir = v_location, title = 'Select a video that you want to label!')
+    video_to_label_path = os.path.join(v_location, video_to_label)
+    csv_to_label = filedialog.askopenfilename(initialdir = csv_output_folder, title = 'Select the corresponding csv file')
 
-# for video in videos:
-#     df = pd.read_csv(direc + '\\csv_output\\' + video[0:-4] + 'DLC_resnet50_social_behavior_allMay27shuffle1_250000.csv', header = [1, 2])
-#     video_name = direc + '\\mp4s\\' + video
-#     z = calculate_investigation_times_single(df)
-#     export_labelled_frames(df, vname = video_name, frame_val = z, output_dir = 'E:\\DATA\\' + video[0:-4] + '_labelled_frames_correct_green_red')
-#     print(video + 'Frames Finished!')
+    df = pd.read_csv(os.path.join(csv_direc, csv_to_label + '.csv'), header = [1, 2])
+    invest_times = calculate_investigation_times_single(df)
+    export_labelled_frames(df, video_to_label_path, frame_val = invest_times, output_dir = os.path.join(main_dir, 'labelled_frames_' + video_to_label))
+    labelled_frames_output = Label(root, text = """
+    
+    Frames have been labelled!
+    They are stored in the labelled frames directory in main analysis folder"""
+    
+    , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
-def export_frames_with_label:
+export_labelled_frames_btn = Button(tab_frame, text = '7: Label frames from a video', command = export_frames_with_label).pack(side = 'left')
+
 
 
 
