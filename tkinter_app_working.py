@@ -374,6 +374,32 @@ convert_2_secs_btn = Button(tab_frame, text = 'Step 6: Convert Investigation tim
 
 
 
+
+
+
+
+
+
+
+
+
+##### Button for step 7 - creating labelled frames that can be stitched into a labelled video #####
+
+
+
+# for video in videos:
+#     df = pd.read_csv(direc + '\\csv_output\\' + video[0:-4] + 'DLC_resnet50_social_behavior_allMay27shuffle1_250000.csv', header = [1, 2])
+#     video_name = direc + '\\mp4s\\' + video
+#     z = calculate_investigation_times_single(df)
+#     export_labelled_frames(df, vname = video_name, frame_val = z, output_dir = 'E:\\DATA\\' + video[0:-4] + '_labelled_frames_correct_green_red')
+#     print(video + 'Frames Finished!')
+
+def export_frames_with_label:
+
+
+
+### finishing the Tkinter loop
+
 root.mainloop()
 
 

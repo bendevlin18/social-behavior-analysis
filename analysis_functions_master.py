@@ -123,7 +123,7 @@ def time_df(df_times, v_location):
 
     for i in range(len(df_times)):
 
-        cap = cv2.VideoCapture(v_location + '\\' + df_times['VideoName'][i] + '.mp4')
+        cap = cv2.VideoCapture(os.path.join(v_location, df_times['VideoName'][i] + '.mp4')
         frameRate[i] = cap.get(cv2.CAP_PROP_FPS)
         StartSocialFrames[i] = df_times['StartSocialSec'][i] * frameRate[i]
         StartNovelFrames[i] = df_times['StartNovelSec'][i] * frameRate[i]
@@ -217,3 +217,58 @@ def check_orientation_single(df, index_loc, extra_coords):
         
     return orientation
 
+### export labelled frames function that allows you to take a video and create labelled frames with the output head vector
+### REQUIRES VIRTUALDUB TO STITCH THE VIDEO TOGETHER AFTER ###
+
+def export_labelled_frames(df, vname, frame_val, output_dir = 'labelled_frames', investigation = True):
+    
+    ## import all of the necessary packages
+    import numpy as np
+    import pandas as pd
+    import cv2
+    import os
+    from tqdm.notebook import tqdm
+    
+    video = cv2.VideoCapture(vname)
+
+
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+    
+    ## extract relevant meta information about the video
+    frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+    width  = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = int(video.get(cv2.CAP_PROP_FPS))
+    
+    ## while loop through every frame of the video and label each frame
+    success, image = video.read()
+    count = 0
+    pbar = tqdm(total = len(df)+1)
+    while success:
+        nose_coords = (int(df['nose']['x'].loc[count]), int(df['nose']['y'].loc[count]))
+        midpoint_coords = (int((df['right ear']['x'].loc[count] + df['left ear']['x'].loc[count]) / 2) , int((df['right ear']['y'].loc[count] + df['left ear']['y'].loc[count]) / 2))
+        if frame_val[count] == 'Somewhere else':
+            color = (0, 0, 255)
+        if frame_val[count] == 'X Close':
+            color = (0, 0, 255)
+        if frame_val[count] == 'Y Close':
+            color = (0, 0, 255)
+        if frame_val[count] == 'X Investigation':
+            color = (0, 255, 0)
+        if frame_val[count] == 'Y Investigation':
+            color = (0, 255, 0)
+        pbar.update(1)
+        cv2.imwrite(os.path.join(output_dir, 'frame_' + str(count) + '.png'), image)
+        success,image = video.read()
+        count += 1
+    pbar.close()
+
+
+
+### distance formula for calculating the total distance travelled for each animal
+
+def dist_formula(x1, y1, x2, y2):
+    d = np.sqrt((x2 + x1)**2 + (y2 - y1)**2)
+
+    return d
