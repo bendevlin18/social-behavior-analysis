@@ -189,7 +189,7 @@ def prep_time_df():
 
     ## function for reading in the time dataframe. this is a separate excel/csv that contains the time that the animal was actually placed in the chamber (this is not always the very start of the video)
     global df_times
-    df_times = pd.read_excel(os.path.join(main_dir, df_times_filename))
+    df_times = pd.read_csv(os.path.join(main_dir, df_times_filename))
     
     ## adjusting the timedf with time_df function to calculate start and stop frames
     df_times = time_df(df_times, v_location)
@@ -216,19 +216,22 @@ def show_heatmaps():
     ## creating a heatmaps folder to save the heatmaps for each video ##
     videos = os.listdir(os.path.join(main_dir, csv_output_folder))
 
-    if not os.path.exists(os.path.join(main_dir, 'heatmaps')):
-        os.mkdir(os.path.join(main_dir, 'heatmaps'))
+    behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
+
+    if not os.path.exists(os.path.join(main_dir, behavior_type + '_heatmaps')):
+        os.mkdir(os.path.join(main_dir, behavior_type + '_heatmaps'))
+
 
     ## loop through the list of videos and plot a heatmap on them
     for i in range(len(videos)):
         if 'csv' in videos[i]:
             df = pd.read_csv(os.path.join(main_dir, csv_output_folder, videos[i]), header = [1, 2])
 
-            trial_frames = (df_times['StartSocialFrames'][i] + 30, df_times['StopSocialFrames'][i] + 30)
+            trial_frames = (df_times['Start' + behavior_type + 'Frames'][i] + 30, df_times['Stop' + behavior_type + 'Frames'][i] + 30)
 
             plot_heatmap(coordinates, df, trial_frames)
 
-            plt.savefig(os.path.join(main_dir, 'heatmaps', videos[i] + '.png'))
+            plt.savefig(os.path.join(main_dir, behavior_type + '_heatmaps', videos[i] + '.png'))
             print(videos[i] + ' heatmap saved!')
             plt.close()
 
@@ -246,10 +249,12 @@ main_heatmap_generator_btn = Button(tab_frame, text = '4: Create Heatmaps (OPTIO
 
 ######### Button for Step 5, which is the main calculation and analysis based on ROIs #########
 
-def calculate_investigation_times(behavior_type = 'Social', bodypart = 'nose'):
+def calculate_investigation_times(bodypart = 'nose'):
 
     global video_suffix
+    global behavior_type
     video_suffix = simpledialog.askstring('DLC_resnet50_social_behavior_allMay27shuffle1_250000', 'What is the DLC suffix?')
+    behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
     final_dict = {}
     csv_direc = os.path.join(main_dir, csv_output_folder)
 
@@ -329,7 +334,7 @@ def calculate_investigation_times(behavior_type = 'Social', bodypart = 'nose'):
         output_df.set_index(['index', 'type'], inplace = True)
 
         print('Just finished Video ' + str(i + 1) + ' of ' + str(len(df_times)))
-    output_df.to_csv(os.path.join(main_dir, 'output.csv'))
+    output_df.to_csv(os.path.join(main_dir, behavior_type + '_output.csv'))
 
     invest_output = Label(root, text = """
     
@@ -346,8 +351,10 @@ def convert_to_secs():
 
     global new_df
 
-    if os.path.join(main_dir, 'output.csv'):
-        output_df = pd.read_csv(os.path.join(main_dir, 'output.csv'), index_col = 0)
+    behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
+
+    if os.path.join(main_dir, behavior_type + '_output.csv'):
+        output_df = pd.read_csv(os.path.join(main_dir, behavior_type + '_output.csv'), index_col = 0)
 
     new_df = pd.DataFrame(columns = output_df.columns, index = output_df.index)
 
@@ -362,7 +369,7 @@ def convert_to_secs():
     else:
         pass
     new_df['type'] = output_df['type']
-    new_df.to_csv(os.path.join(main_dir, 'adjusted_output.csv'))
+    new_df.to_csv(os.path.join(main_dir, behavior_type + '_adjusted_output.csv'))
     secs_output = Label(root, text = """
     
     Investigation times converted to seconds!
@@ -375,7 +382,6 @@ convert_2_secs_btn = Button(tab_frame, text = '6: Convert Investigation times to
 
 
 
-
 ##### Button for step 7 - creating labelled frames that can be stitched into a labelled video #####
 
 
@@ -383,10 +389,10 @@ def export_frames_with_label():
     video_to_label = filedialog.askopenfilename(initialdir = v_location, title = 'Select a video that you want to label!')
     video_to_label_path = os.path.join(v_location, video_to_label)
     csv_to_label = filedialog.askopenfilename(initialdir = csv_output_folder, title = 'Select the corresponding csv file')
-
-    df = pd.read_csv(os.path.join(csv_direc, csv_to_label + '.csv'), header = [1, 2])
-    invest_times = calculate_investigation_times_single(df)
-    export_labelled_frames(df, video_to_label_path, frame_val = invest_times, output_dir = os.path.join(main_dir, 'labelled_frames_' + video_to_label))
+    csv_direc = os.path.join(main_dir, csv_output_folder)
+    df = pd.read_csv(os.path.join(csv_direc, csv_to_label), header = [1, 2])
+    invest_times = calculate_investigation_times_single(df, possible_places, extra_coords)
+    export_labelled_frames(df, video_to_label_path, frame_val = invest_times, output_dir = os.path.join(main_dir, 'labelled_frames'))
     labelled_frames_output = Label(root, text = """
     
     Frames have been labelled!
@@ -397,6 +403,37 @@ def export_frames_with_label():
 export_labelled_frames_btn = Button(tab_frame, text = '7: Label frames from a video', command = export_frames_with_label).pack(side = 'left')
 
 
+##### Button for step8 - calculating total distance travelled for each trial
+
+def total_distance_travelled():
+
+    behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
+    video_suffix = simpledialog.askstring('DLC_resnet50_social_behavior_allMay27shuffle1_250000', 'What is the DLC suffix?')
+    csv_direc = os.path.join(main_dir, csv_output_folder)
+    distance_travelled = [0] * len(df_times)
+
+    for i in range(len(df_times)):
+
+        df = pd.read_csv(os.path.join(csv_direc, df_times['VideoName'][i] + video_suffix), header = [1, 2], index_col = 0)
+
+        int_time_df = df.loc[df_times['Start' + behavior_type + 'Frames'][i]:df_times['Stop' + behavior_type + 'Frames'][i]]
+
+        int_time_df.reset_index(drop = True, inplace = True)
+
+        print(int_time_df)
+        
+        distances = [0] * len(int_time_df)
+        count = 0
+
+        for row in tqdm(range(len(int_time_df-2))):
+            count += 1
+            distances[count] = (dist_formula(int_time_df['nose']['x'].loc[row+1], int_time_df['nose']['x'].loc[row], int_time_df['nose']['y'].loc[row+1], int_time_df['nose']['y'].loc[row]))
+
+        distance_travelled[i] = np.sum(distances)
+
+    pd.DataFrame(distance_travelled).to_csv(os.path.join(main_dir, behavior_type +'_distance_travelled.csv'))
+
+distance_travelled_btn = Button(tab_frame, text = '8: Calculate total distance travelled', command = total_distance_travelled).pack(side = 'left')
 
 
 ### finishing the Tkinter loop

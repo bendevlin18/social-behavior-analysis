@@ -228,10 +228,10 @@ def export_labelled_frames(df, vname, frame_val, output_dir = 'labelled_frames',
 	import pandas as pd
 	import cv2
 	import os
-	from tqdm.notebook import tqdm
 	
 	video = cv2.VideoCapture(vname)
 
+	print('Starting to save labelled video frames')
 
 	if not os.path.exists(output_dir):
 		os.mkdir(output_dir)
@@ -245,10 +245,11 @@ def export_labelled_frames(df, vname, frame_val, output_dir = 'labelled_frames',
 	## while loop through every frame of the video and label each frame
 	success, image = video.read()
 	count = 0
-	pbar = tqdm(total = len(df)+1)
 	while success:
+		print(count / len(df))
 		nose_coords = (int(df['nose']['x'].loc[count]), int(df['nose']['y'].loc[count]))
 		midpoint_coords = (int((df['right ear']['x'].loc[count] + df['left ear']['x'].loc[count]) / 2) , int((df['right ear']['y'].loc[count] + df['left ear']['y'].loc[count]) / 2))
+		print(nose_coords, midpoint_coords)
 		if frame_val[count] == 'Somewhere else':
 			color = (0, 0, 255)
 		if frame_val[count] == 'X Close':
@@ -259,11 +260,10 @@ def export_labelled_frames(df, vname, frame_val, output_dir = 'labelled_frames',
 			color = (0, 255, 0)
 		if frame_val[count] == 'Y Investigation':
 			color = (0, 255, 0)
-		pbar.update(1)
-		cv2.imwrite(os.path.join(output_dir, 'frame_' + str(count) + '.png'), image)
+		image_new = cv2.line(image, nose_coords, midpoint_coords, color, 4)
+		cv2.imwrite(filename = os.path.join(output_dir, 'frame_' + str(count) + '.png'), img = image_new)
 		success,image = video.read()
 		count += 1
-	pbar.close()
 
 
 
@@ -278,7 +278,7 @@ def dist_formula(x1, y1, x2, y2):
 
 ### funtion for calculation investigation times on only one video
 
-def calculate_investigation_times_single(df):
+def calculate_investigation_times_single(df, possible_places, extra_coords):
 	
 	import numpy as np
 	import pandas as pd
@@ -286,7 +286,6 @@ def calculate_investigation_times_single(df):
 	from shapely.geometry import Point
 	from shapely.geometry.polygon import Polygon
 	import cv2
-	from tqdm.notebook import tqdm
 	
 	bodyparts = np.unique(df.columns.get_level_values(0))[1:]
 
@@ -294,13 +293,10 @@ def calculate_investigation_times_single(df):
 
 	### now we should check the coordinates of each bodypart in each frame
 	print('Calculating Investigation Times: ')
-	pbar = tqdm(total = len(df), leave = True)
-	
 	for row in range(len(df)):
-		pbar.update()
+		print(row / len(df))
 		for j in range(len(bodyparts)):
 			arr[row][j] = check_coords(df[bodyparts[j]][['x', 'y']].loc[row].values, possible_places)
-	pbar.close()
 			
 	print('Array Constructed!')
 
@@ -311,20 +307,21 @@ def calculate_investigation_times_single(df):
 	### now we want to check each frame in our array, and create a frame_val array that holds info about where the mouse's head was detected
 	z = -1
 	frame_val = np.zeros(shape = len(arr), dtype = 'object')
-	for frame in tqdm(range(len(arr))):
+	for frame in range(len(arr)):
+		print(int(100*(frame / len(arr))))
 		z = z + 1
 		comparison_x = arr[frame][0:1] == x_inv
 		comparison_y = arr[frame][0:1] == y_inv
 
 		if comparison_x.all() == True:
-			if check_orientation_single(df, z) == 'oriented':
+			if check_orientation_single(df, z, extra_coords) == 'oriented':
 				frame_val[z] = 'X Investigation'
-			elif check_orientation_single(df, z) == 'not_oriented':
+			elif check_orientation_single(df, z, extra_coords) == 'not_oriented':
 				frame_val[z] = 'X Close'
 		elif comparison_y.all() == True:
-			if check_orientation_single(df, z) == 'oriented':
+			if check_orientation_single(df, z, extra_coords) == 'oriented':
 				frame_val[z] = 'Y Investigation'
-			elif check_orientation_single(df, z) == 'not_oriented':
+			elif check_orientation_single(df, z, extra_coords) == 'not_oriented':
 				frame_val[z] = 'Y Close'
 		else:
 			frame_val[z] = 'Somewhere else'
