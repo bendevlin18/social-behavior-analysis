@@ -14,7 +14,7 @@ import os
 from tkinter import *
 from tkinter import filedialog
 import tkinter.font as tkFont
-from tkinter import ttk
+from tkinter import ttk, simpledialog
 from PIL import ImageTk, Image
 from analysis_functions_master import *
 from tqdm import tqdm
@@ -35,8 +35,12 @@ direc_frame.grid(padx = 10, pady = 10, sticky='nsew')
 img_frame = LabelFrame(root, padx = 5, pady = 5)
 img_frame.grid(padx = 10, pady = 10, sticky='nsew')
 
+csv_output_folder_frame = LabelFrame(root, padx = 5, pady = 5)
+csv_output_folder_frame.grid(padx = 10, pady = 10, sticky='nsew')
+
 mp4_frame = LabelFrame(root, padx = 5, pady = 5)
 mp4_frame.grid(padx = 10, pady = 10, sticky='nsew')
+
 
 df_times_frame = LabelFrame(root, padx = 5, pady = 5)
 df_times_frame.grid(padx = 10, pady = 10, sticky='nsew')
@@ -49,7 +53,7 @@ tab_frame.grid(padx = 10, pady = 10, sticky='nsew')
 root.title('Home Page')
 font_style_big = tkFont.Font(family="Lucida Grande", size=50)
 font_style_small = tkFont.Font(family="Lucida Grande", size=35)
-main_page_label = Label(header_frame, text = 'Welcome to the main page', font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
+main_page_label = Label(header_frame, text = 'Main page', font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
 ######### Button for grabbing the main analysis directory #########
 
@@ -62,9 +66,11 @@ def direc_btn():
     directory = filedialog.askdirectory(initialdir = os.getcwd(), title = 'Select the analysis directory')
     main_dir = directory
     main_direc_readout = Label(direc_frame, text = directory, bg = 'black', fg = 'white', borderwidth = 5).grid(row = 1, column = 1, sticky='nsew')
+    os.chdir(main_dir)
 
 main_direc_label = Label(direc_frame, text = 'Enter the main analysis directory here').grid(row = 1, column = 0, sticky='nsew')
 main_direc_button = Button(direc_frame, text = '...', command = direc_btn).grid(row = 1, column = 2, sticky='nsew')
+
 
 ######### Button for grabbing the video directory ##########
 
@@ -80,17 +86,34 @@ def video_dir_btn():
 main_video_loc_label = Label(mp4_frame, text = 'Navigate to the master directory with all the videos').grid(row = 1, column = 0, sticky='nsew')
 main_video_loc_button = Button(mp4_frame, text = '...', command = video_dir_btn).grid(row = 1, column = 2, sticky='nsew')
 
+
+
+def csv_folder_btn():
+
+    ##  ##
+    ##  ##
+
+    global csv_output_folder
+    csv_output_folder = filedialog.askdirectory(initialdir = os.getcwd(), title = 'Select the csv file directory')
+    csv_output_folder_location = Label(csv_output_folder_frame, text = csv_output_folder, bg = 'black', fg = 'white', borderwidth = 5).grid(row = 1, column = 1, sticky='nsew')
+
+df_times_loc_label = Label(csv_output_folder_frame, text = 'Navigate to the folder with the csv coordinate outputs').grid(row = 1, column = 0, sticky='nsew')
+df_times_loc_button = Button(csv_output_folder_frame, text = '...', command = csv_folder_btn).grid(row = 1, column = 2, sticky='nsew')
+
 def df_time_file_btn():
 
     ##  ##
     ##  ##
 
-    global df_times
+    global df_times_filename
     df_times_filename = filedialog.askopenfilename(initialdir = os.getcwd(), title = 'Select the excel file with start times')
     start_times_location_readout = Label(df_times_frame, text = df_times_filename, bg = 'black', fg = 'white', borderwidth = 5).grid(row = 1, column = 1, sticky='nsew')
 
 df_times_loc_label = Label(df_times_frame, text = 'Navigate to the file with the start times').grid(row = 1, column = 0, sticky='nsew')
 df_times_loc_button = Button(df_times_frame, text = '...', command = df_time_file_btn).grid(row = 1, column = 2, sticky='nsew')
+
+
+
 
 
 ######### Button for Step 1, which is to annotate the video and define the ROIs #########
@@ -112,7 +135,7 @@ def annotate_window():
         selectROI(location, frame, main_dir)
     annotate_output = Label(root, text = 'All Done! Coordinates Saved in Coordinates Directory', font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
-main_annotate_btn = Button(tab_frame, text = 'Step 1: Annotate Video Frame', command = annotate_window).pack(side = 'left')
+main_annotate_btn = Button(tab_frame, text = '1: Annotate Video Frame', command = annotate_window).pack(side = 'left')
 
 
 ########## Button for Step 2, which imports the coordinates and displays them over a representative frame of the video #########
@@ -157,52 +180,16 @@ def create_coord_window():
 
         plot_coordinates_frame(grab_video_frame(v_location), coordinates)
 
-main_coord_import_btn = Button(tab_frame, text = 'Step 2: Import & Show Coordinate Annotations', command = create_coord_window).pack(side = 'left')
+main_coord_import_btn = Button(tab_frame, text = '2: Import Coordinate Annotations', command = create_coord_window).pack(side = 'left')
 
 
-######### Button for Step 3, creating heatmaps for every video. This is optional and still in alpha #########
-
-def show_heatmaps():
-    coordinates = [possible_places, extra_coords]
-
-    ## extracting the DLC csv output from the csv_output folder that MUST be in the master analysis directory ##
-    ## creating a heatmaps folder to save the heatmaps for each video ##
-    videos = os.listdir(os.path.join(main_dir, 'csv_outputs'))
-
-    if not os.path.exists(os.path.join(main_dir, 'heatmaps')):
-        os.mkdir(os.path.join(main_dir, 'heatmaps'))
-
-    ## loop through the list of videos and plot a heatmap on them
-    for i in range(len(videos)):
-        if 'csv' in videos[i]:
-            df = pd.read_csv(os.path.join(main_dir, 'csv_outputs', videos[i]), header = [1, 2])
-
-            trial_frames = (df_times['StartSocialFrames'][i] + 30, df_times['StopSocialFrames'][i] + 30)
-
-            plot_heatmap(coordinates, df, trial_frames)
-
-            plt.savefig(os.path.join(main_dir, 'heatmaps', videos[i], '.png'))
-            plt.close()
-
-        heatmap_output = Label(root, text = """
-        
-        All Finished! 
-        Heatmaps are now saved in the heatmaps folder in the main analysis directory"""
-        
-        , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
-
-
-main_heatmap_generator_btn = Button(tab_frame, text = 'Step 3: Create Heatmap / Validate Labels (OPTIONAL)', command = show_heatmaps).pack(side = 'left')
-
-
-######### Button for Step 4, preparing the time dataframe #########
-
+######### Button for Step 3, preparing the time dataframe #########
 
 def prep_time_df():
 
     ## function for reading in the time dataframe. this is a separate excel/csv that contains the time that the animal was actually placed in the chamber (this is not always the very start of the video)
-    #global df_times
-    df_times = pd.read_excel(os.path.join(main_dir, df_times_filename))
+    global df_times
+    df_times = pd.read_csv(os.path.join(main_dir, df_times_filename))
     
     ## adjusting the timedf with time_df function to calculate start and stop frames
     df_times = time_df(df_times, v_location)
@@ -217,24 +204,94 @@ def prep_time_df():
     print(df_times)
 
 
-main_time_df_import_btn = Button(tab_frame, text = 'Step 4: Import and Format Time Dataframe', command = prep_time_df).pack(side = 'left')
+main_time_df_import_btn = Button(tab_frame, text = '3: Import Time Dataframe', command = prep_time_df).pack(side = 'left')
 
+######### Button to process and/or import preprocessed CSVs #########
+
+def preprocess_df():
+
+    print('Now preprocessing and smoothing the raw DLC output')
+    global processed_csv_output_folder
+
+    if not os.path.exists(main_dir + '\\smoothed_csv_output'):
+        os.mkdir(main_dir + '\\smoothed_csv_output')
+        
+        processed_csv_output_folder = os.path.join(main_dir, 'smoothed_csv_output')
+
+        count = 0
+        for file in os.listdir(csv_output_folder):
+            count += 1
+            process_csv(pd.read_csv(os.path.join(csv_output_folder, file), header = [1, 2])).to_csv(os.path.join(processed_csv_output_folder, file))
+            print('Finished file ', str(count), ' of', str(len(os.listdir(csv_output_folder))))
+    elif os.path.exists(main_dir + '\\smoothed_csv_output'):
+        processed_csv_output_folder = os.path.join(main_dir, 'smoothed_csv_output')
+
+    print('CSVs smoothed and imported!')
+
+preprocess_csv_btn = Button(tab_frame, text = '4: Process and Import CSVs', command = preprocess_df).pack(side = 'left')
+
+
+
+
+
+
+######### Button for Step 4, creating heatmaps for every video. This is optional and still in alpha #########
+
+def show_heatmaps():
+    coordinates = [possible_places, extra_coords]
+
+    ## extracting the DLC csv output from the csv_output folder that MUST be in the master analysis directory ##
+    ## creating a heatmaps folder to save the heatmaps for each video ##
+    videos = os.listdir(os.path.join(main_dir, processed_csv_output_folder))
+
+    behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
+
+    if not os.path.exists(os.path.join(main_dir, behavior_type + '_heatmaps')):
+        os.mkdir(os.path.join(main_dir, behavior_type + '_heatmaps'))
+
+
+    ## loop through the list of videos and plot a heatmap on them
+    for i in range(len(videos)):
+        if 'csv' in videos[i]:
+            df = pd.read_csv(os.path.join(main_dir, processed_csv_output_folder, videos[i]), header = [0, 1])
+
+            trial_frames = (df_times['Start' + behavior_type + 'Frames'][i] + 30, df_times['Stop' + behavior_type + 'Frames'][i] + 30)
+
+            plot_heatmap_dark(coordinates, df, trial_frames)
+
+            plt.savefig(os.path.join(main_dir, behavior_type + '_heatmaps', videos[i] + '.png'))
+            print(videos[i] + ' heatmap saved!')
+            plt.close()
+
+        heatmap_output = Label(root, text = """
+        
+        All Finished! 
+        Heatmaps are now saved in the heatmaps folder in the main analysis directory"""
+        
+        , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
+
+
+main_heatmap_generator_btn = Button(tab_frame, text = '4: Create Heatmaps (OPTIONAL)', command = show_heatmaps).pack(side = 'left')
 
 
 
 ######### Button for Step 5, which is the main calculation and analysis based on ROIs #########
 
-def calculate_investigation_times(behavior_type = 'Social', bodypart = 'nose', video_suffix = 'DLC_resnet50_social_behavior_allMay27shuffle1_250000.csv'):
+def calculate_investigation_times(bodypart = 'nose'):
 
+    global video_suffix
+    global behavior_type
+    video_suffix = simpledialog.askstring('DLC_resnet50_social_behavior_allMay27shuffle1_250000', 'What is the DLC suffix?')
+    behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
     final_dict = {}
-    csv_direc = os.path.join(main_dir, 'csv_outputs')
+    csv_direc = os.path.join(main_dir, processed_csv_output_folder)
 
 
     for i in range(len(df_times)):
  
         ### first we will want to get the right dataframe, so we should import it based on the df_times location and clean it
 
-        df = pd.read_csv(csv_direc + df_times['VideoName'][i] + video_suffix, header = [1, 2], index_col = 0)
+        df = pd.read_csv(os.path.join(csv_direc, df_times['VideoName'][i] + video_suffix), header = [1, 2], index_col = 0)
         bodyparts = np.unique(df.columns.get_level_values(0))        
 
         int_df = df.loc[df_times['Start' + behavior_type + 'Frames'][i]:df_times['Stop' + behavior_type + 'Frames'][i]]
@@ -246,7 +303,7 @@ def calculate_investigation_times(behavior_type = 'Social', bodypart = 'nose', v
 
         ### now we should check the coordinates of each bodypart in each frame
         
-
+        print('Loading in bodypart coordinates for each frame')
         for row in tqdm(range(len(int_df))):
             for j in range(len(bodyparts)):
                 arr[row][j] = check_coords(int_df[bodyparts[j]][['x', 'y']].loc[row].values, possible_places)
@@ -258,8 +315,10 @@ def calculate_investigation_times(behavior_type = 'Social', bodypart = 'nose', v
 
         if bodypart == 'nose_and_ears':
             x_inv = np.array([[1., 0., 1., 0., 0.], [1., 0., 1., 0., 0.], [1., 0., 1., 0., 0.]])
-            y_inv = np.array([[0., 1., 0., 0., 1.], [1., 0., 1., 0., 0.], [1., 0., 1., 0., 0.]])           
+            y_inv = np.array([[0., 1., 0., 0., 1.], [1., 0., 1., 0., 0.], [1., 0., 1., 0., 0.]])       
 
+
+        print('Now comparing bodypart coordinates against annotated zones')
         ### now we want to check each frame in our array, and create a frame_val array that holds info about where the mouse's head was detected
         z = -1
         frame_val = np.zeros(shape = len(arr), dtype = 'object')
@@ -303,7 +362,7 @@ def calculate_investigation_times(behavior_type = 'Social', bodypart = 'nose', v
         output_df.set_index(['index', 'type'], inplace = True)
 
         print('Just finished Video ' + str(i + 1) + ' of ' + str(len(df_times)))
-    output_df.to_csv(os.path.join(main_dir, 'output.csv'))
+    output_df.to_csv(os.path.join(main_dir, behavior_type + '_output.csv'))
 
     invest_output = Label(root, text = """
     
@@ -312,7 +371,7 @@ def calculate_investigation_times(behavior_type = 'Social', bodypart = 'nose', v
     
     , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
-main_calculate_invest_btn = Button(tab_frame, text = 'Step 5: Calculate Investigation Times!', command = calculate_investigation_times).pack(side = 'left')
+main_calculate_invest_btn = Button(tab_frame, text = '5: Calculate Investigation Times!', command = calculate_investigation_times).pack(side = 'left')
 
 
 
@@ -320,8 +379,10 @@ def convert_to_secs():
 
     global new_df
 
-    if os.path.join(main_dir, 'output.csv'):
-        output_df = pd.read_csv(os.path.join(main_dir, 'output.csv'), index_col = 0)
+    behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
+
+    if os.path.join(main_dir, behavior_type + '_output.csv'):
+        output_df = pd.read_csv(os.path.join(main_dir, behavior_type + '_output.csv'), index_col = 0)
 
     new_df = pd.DataFrame(columns = output_df.columns, index = output_df.index)
 
@@ -329,14 +390,14 @@ def convert_to_secs():
     i = -1
     for index, values in df_times.iterrows():
         i = i + 1
-        cap = cv2.VideoCapture(v_location + '\\' + values['VideoName'] + '.mp4')
+        cap = cv2.VideoCapture(os.path.join(v_location, values['VideoName'] + '.mp4'))
         frameRate[i] = cap.get(cv2.CAP_PROP_FPS)
         index = output_df.index[i]
         new_df.loc[index][1:6] = (output_df.loc[index][1:6] / frameRate[i]).values
     else:
         pass
     new_df['type'] = output_df['type']
-    new_df.to_csv(main_dir + '\\adjusted_output.csv')
+    new_df.to_csv(os.path.join(main_dir, behavior_type + '_adjusted_output.csv'))
     secs_output = Label(root, text = """
     
     Investigation times converted to seconds!
@@ -345,9 +406,78 @@ def convert_to_secs():
     , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
 
-convert_2_secs_btn = Button(tab_frame, text = 'Step 6: Convert Investigation times to Seconds', command = convert_to_secs).pack(side = 'left')
+convert_2_secs_btn = Button(tab_frame, text = '6: Convert Investigation times to Secs', command = convert_to_secs).pack(side = 'left')
 
 
 
+##### Button for step 7 - creating labelled frames that can be stitched into a labelled video #####
+
+
+def export_frames_with_label():
+    video_to_label = filedialog.askopenfilename(initialdir = v_location, title = 'Select a video that you want to label!')
+    video_to_label_path = os.path.join(v_location, video_to_label)
+    csv_to_label = filedialog.askopenfilename(initialdir = processed_csv_output_folder, title = 'Select the corresponding csv file')
+    csv_direc = os.path.join(main_dir, processed_csv_output_folder)
+    df = pd.read_csv(os.path.join(csv_direc, csv_to_label), header = [1, 2])
+    invest_times = calculate_investigation_times_single(df, possible_places, extra_coords)
+    export_labelled_frames(df, video_to_label_path, frame_val = invest_times, output_dir = os.path.join(main_dir, 'labelled_frames'))
+    labelled_frames_output = Label(root, text = """
+    
+    Frames have been labelled!
+    They are stored in the labelled frames directory in main analysis folder"""
+    
+    , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
+
+export_labelled_frames_btn = Button(tab_frame, text = '7: Label frames from a video', command = export_frames_with_label).pack(side = 'left')
+
+
+##### Button for step8 - calculating total distance travelled for each trial
+
+def total_distance_travelled():
+
+    behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
+    video_suffix = simpledialog.askstring('DLC_resnet50_social_behavior_allMay27shuffle1_250000', 'What is the DLC suffix?')
+    csv_direc = os.path.join(main_dir, processed_csv_output_folder)
+    distance_travelled = [0] * len(df_times)
+
+    for i in range(len(df_times)):
+
+        label = Label(root, text= str('Analyzing video ' + str(int(i)) + ' of ' + str(len(df_times))))
+        label.pack()
+
+        print('Analyzing video ' + str(int(i)) + ' of ' + str(len(df_times)))
+
+        df = pd.read_csv(os.path.join(csv_direc, df_times['VideoName'][i] + video_suffix), header = [1, 2], index_col = 0)
+
+        int_time_df = df.loc[df_times['Start' + behavior_type + 'Frames'][i]:df_times['Stop' + behavior_type + 'Frames'][i]]
+
+        int_time_df.reset_index(drop = True, inplace = True)
+        
+        distances = [0] * len(int_time_df)
+        count = 0
+
+        for row in range(len(int_time_df)-2):
+            count = count + 1
+            distances[count] = (dist_formula(int_time_df['nose']['x'].loc[row+1], int_time_df['nose']['x'].loc[row], int_time_df['nose']['y'].loc[row+1], int_time_df['nose']['y'].loc[row]))
+
+        distance_travelled[i] = np.sum(distances)
+
+        print('Just finished video ' + str(int(i)) + ' of ' + str(len(df_times)))
+
+    pd.DataFrame([distance_travelled, df_times['VideoName']]).T.set_index(1).to_csv(os.path.join(main_dir, behavior_type +'_distance_travelled.csv'))
+
+    print('All finished! Distance travelled information is saved in distance_traveled.csv in the main analysis directory')
+
+distance_travelled_btn = Button(tab_frame, text = '8: Calculate total distance traveled', command = total_distance_travelled).pack(side = 'left')
+
+
+### finishing the Tkinter loop
 
 root.mainloop()
+
+
+
+#### few more things I might want to add ####
+## a config file, that is saved automatically with all the directory information for a project, maybe just a csv that we could save each row as a separate path
+## heatmap function that comes after the coordinate information is calculated, so that we can plot colored head vectors based on which behavior is happening
+## photos or graphics to make it look a bit nicer, although this is definitely not a necessity
