@@ -203,21 +203,36 @@ def prep_time_df():
 
     print(df_times)
 
-    #### Need to also preprocess the csv files!
+
+main_time_df_import_btn = Button(tab_frame, text = '3: Import Time Dataframe', command = prep_time_df).pack(side = 'left')
+
+######### Button to process and/or import preprocessed CSVs #########
+
+def preprocess_df():
 
     print('Now preprocessing and smoothing the raw DLC output')
+    global processed_csv_output_folder
 
     if not os.path.exists(main_dir + '\\smoothed_csv_output'):
         os.mkdir(main_dir + '\\smoothed_csv_output')
+        
+        processed_csv_output_folder = os.path.join(main_dir, 'smoothed_csv_output')
 
-    processed_csv_output_folder = os.path.join(main_dir, 'smoothed_csv_output')
+        count = 0
+        for file in os.listdir(csv_output_folder):
+            count += 1
+            process_csv(pd.read_csv(os.path.join(csv_output_folder, file), header = [1, 2])).to_csv(os.path.join(processed_csv_output_folder, file))
+            print('Finished file ', str(count), ' of', str(len(os.listdir(csv_output_folder))))
+    elif os.path.exists(main_dir + '\\smoothed_csv_output'):
+        processed_csv_output_folder = os.path.join(main_dir, 'smoothed_csv_output')
 
-    for file in os.listdir(csv_output_folder):
-        process_csv(pd.read_csv(os.path.join(csv_output_folder, file))).to_csv(os.path.join(processed_csv_output_folder, 'preprocessed_' + file))
+    print('CSVs smoothed and imported!')
 
-    csv_output_folder = processed_csv_output_folder
+preprocess_csv_btn = Button(tab_frame, text = '4: Process and Import CSVs', command = preprocess_df).pack(side = 'left')
 
-main_time_df_import_btn = Button(tab_frame, text = '3: Import Time Dataframe', command = prep_time_df).pack(side = 'left')
+
+
+
 
 
 ######### Button for Step 4, creating heatmaps for every video. This is optional and still in alpha #########
@@ -227,7 +242,7 @@ def show_heatmaps():
 
     ## extracting the DLC csv output from the csv_output folder that MUST be in the master analysis directory ##
     ## creating a heatmaps folder to save the heatmaps for each video ##
-    videos = os.listdir(os.path.join(main_dir, csv_output_folder))
+    videos = os.listdir(os.path.join(main_dir, processed_csv_output_folder))
 
     behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
 
@@ -238,11 +253,11 @@ def show_heatmaps():
     ## loop through the list of videos and plot a heatmap on them
     for i in range(len(videos)):
         if 'csv' in videos[i]:
-            df = pd.read_csv(os.path.join(main_dir, csv_output_folder, videos[i]), header = [1, 2])
+            df = pd.read_csv(os.path.join(main_dir, processed_csv_output_folder, videos[i]), header = [0, 1])
 
             trial_frames = (df_times['Start' + behavior_type + 'Frames'][i] + 30, df_times['Stop' + behavior_type + 'Frames'][i] + 30)
 
-            plot_heatmap(coordinates, df, trial_frames)
+            plot_heatmap_dark(coordinates, df, trial_frames)
 
             plt.savefig(os.path.join(main_dir, behavior_type + '_heatmaps', videos[i] + '.png'))
             print(videos[i] + ' heatmap saved!')
@@ -269,7 +284,7 @@ def calculate_investigation_times(bodypart = 'nose'):
     video_suffix = simpledialog.askstring('DLC_resnet50_social_behavior_allMay27shuffle1_250000', 'What is the DLC suffix?')
     behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
     final_dict = {}
-    csv_direc = os.path.join(main_dir, csv_output_folder)
+    csv_direc = os.path.join(main_dir, processed_csv_output_folder)
 
 
     for i in range(len(df_times)):
@@ -401,8 +416,8 @@ convert_2_secs_btn = Button(tab_frame, text = '6: Convert Investigation times to
 def export_frames_with_label():
     video_to_label = filedialog.askopenfilename(initialdir = v_location, title = 'Select a video that you want to label!')
     video_to_label_path = os.path.join(v_location, video_to_label)
-    csv_to_label = filedialog.askopenfilename(initialdir = csv_output_folder, title = 'Select the corresponding csv file')
-    csv_direc = os.path.join(main_dir, csv_output_folder)
+    csv_to_label = filedialog.askopenfilename(initialdir = processed_csv_output_folder, title = 'Select the corresponding csv file')
+    csv_direc = os.path.join(main_dir, processed_csv_output_folder)
     df = pd.read_csv(os.path.join(csv_direc, csv_to_label), header = [1, 2])
     invest_times = calculate_investigation_times_single(df, possible_places, extra_coords)
     export_labelled_frames(df, video_to_label_path, frame_val = invest_times, output_dir = os.path.join(main_dir, 'labelled_frames'))
@@ -422,7 +437,7 @@ def total_distance_travelled():
 
     behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
     video_suffix = simpledialog.askstring('DLC_resnet50_social_behavior_allMay27shuffle1_250000', 'What is the DLC suffix?')
-    csv_direc = os.path.join(main_dir, csv_output_folder)
+    csv_direc = os.path.join(main_dir, processed_csv_output_folder)
     distance_travelled = [0] * len(df_times)
 
     for i in range(len(df_times)):
