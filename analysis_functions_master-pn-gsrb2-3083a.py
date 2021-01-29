@@ -100,7 +100,7 @@ def plot_heatmap(coordinates, df, trial_frames):
 		ax.plot(coordinates[1]['y_outer'][0], coordinates[1]['y_outer'][1], color = 'green', linewidth = 2)
 		ax.plot(coordinates[1]['x_center'][0], coordinates[1]['x_center'][1], 'bo')
 		ax.plot(coordinates[1]['y_center'][0], coordinates[1]['y_center'][1], 'go')
-		ax.plot(df['nose']['x'].loc[trial_frames[0]:trial_frames[1]], df['nose']['y'].loc[trial_frames[0]:trial_frames[1]], c='k', alpha=.3, marker='o', linestyle='None')
+		ax.hexbin(df['nose']['x'].loc[trial_frames[0]:trial_frames[1]], df['nose']['y'].loc[trial_frames[0]:trial_frames[1]], bins = 3)
 
 
 
@@ -140,31 +140,6 @@ def time_df(df_times, v_location):
 	return df_times
 
 
-
-##### Functions for main calculations #####
-
-def check_coords(coords, possible_places):
-
-	## simple but important function for check which of the 5 annotated places the the given coordinates fall within ##
-
-	x = []
-
-	for i in range(len(list(possible_places.values()))):   
-		pt = Point(coords)
-		if isinstance(list(possible_places.values())[i], Polygon):
-			polygon = list(possible_places.values())[i]
-		else:
-			polygon = Polygon(list(map(tuple, list(possible_places.values())[i])))
-		x = np.append(x, polygon.contains(pt))
-
-	## returns a list of lists (x) that is 5 x 5 ##
-	## that is, 5 bodypart coordinates (nose/l ear/r ear/tail base/tail end) and 5 possible locations ##
-	## example [0, 1, 0, 0, 1] in position 1 would indicate that the nose body part is in annotated location 2 and 4 (where there is a 1 that body part is in that location) 
-	## the order is the order of possible_places: {'x_zone', 'y_zone', 'left_side', 'middle', 'right_side'} ##
-	## in the example above, the nose would be in the y_zone on the right side ##
-	return x 
-
-
 #### function for processing the raw csv files
 #### takes likelihood values and smooths out parts where the network is uncertain
 def process_csv(df):
@@ -201,6 +176,30 @@ def process_csv(df):
     df_processed.columns = colnames
     
     return df_processed
+
+
+##### Functions for main calculations #####
+
+def check_coords(coords, possible_places):
+
+	## simple but important function for check which of the 5 annotated places the the given coordinates fall within ##
+
+	x = []
+
+	for i in range(len(list(possible_places.values()))):   
+		pt = Point(coords)
+		if isinstance(list(possible_places.values())[i], Polygon):
+			polygon = list(possible_places.values())[i]
+		else:
+			polygon = Polygon(list(map(tuple, list(possible_places.values())[i])))
+		x = np.append(x, polygon.contains(pt))
+
+	## returns a list of lists (x) that is 5 x 5 ##
+	## that is, 5 bodypart coordinates (nose/l ear/r ear/tail base/tail end) and 5 possible locations ##
+	## example [0, 1, 0, 0, 1] in position 1 would indicate that the nose body part is in annotated location 2 and 4 (where there is a 1 that body part is in that location) 
+	## the order is the order of possible_places: {'x_zone', 'y_zone', 'left_side', 'middle', 'right_side'} ##
+	## in the example above, the nose would be in the y_zone on the right side ##
+	return x 
 
 
 def check_climbing(df, coords):

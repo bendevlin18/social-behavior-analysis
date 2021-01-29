@@ -53,7 +53,7 @@ tab_frame.grid(padx = 10, pady = 10, sticky='nsew')
 root.title('Home Page')
 font_style_big = tkFont.Font(family="Lucida Grande", size=50)
 font_style_small = tkFont.Font(family="Lucida Grande", size=35)
-main_page_label = Label(header_frame, text = 'Main page', font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
+main_page_label = Label(header_frame, text = 'Welcome to the main page', font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
 ######### Button for grabbing the main analysis directory #########
 
@@ -203,19 +203,12 @@ def prep_time_df():
 
     print(df_times)
 
-    #### Need to also preprocess the csv files!
-
     print('Now preprocessing and smoothing the raw DLC output')
 
-    if not os.path.exists(main_dir + '\\smoothed_csv_output'):
-        os.mkdir(main_dir + '\\smoothed_csv_output')
-
-    processed_csv_output_folder = os.path.join(main_dir, 'smoothed_csv_output')
-
     for file in os.listdir(csv_output_folder):
-        process_csv(pd.read_csv(os.path.join(csv_output_folder, file))).to_csv(os.path.join(processed_csv_output_folder, 'preprocessed_' + file))
+        process_csv(pd.read_csv(os.path.join(csv_output_folder, file), header = [1, 2])).to_csv(os.path.join(csv_output_folder, 'preprocessed_' + file))
 
-    csv_output_folder = processed_csv_output_folder
+
 
 main_time_df_import_btn = Button(tab_frame, text = '3: Import Time Dataframe', command = prep_time_df).pack(side = 'left')
 
@@ -427,33 +420,26 @@ def total_distance_travelled():
 
     for i in range(len(df_times)):
 
-        label = Label(root, text= str('Analyzing video ' + str(int(i)) + ' of ' + str(len(df_times))))
-        label.pack()
-
-        print('Analyzing video ' + str(int(i)) + ' of ' + str(len(df_times)))
-
         df = pd.read_csv(os.path.join(csv_direc, df_times['VideoName'][i] + video_suffix), header = [1, 2], index_col = 0)
 
         int_time_df = df.loc[df_times['Start' + behavior_type + 'Frames'][i]:df_times['Stop' + behavior_type + 'Frames'][i]]
 
         int_time_df.reset_index(drop = True, inplace = True)
+
+        print(int_time_df)
         
         distances = [0] * len(int_time_df)
         count = 0
-
-        for row in range(len(int_time_df)-2):
-            count = count + 1
+        print('Calculating Distances...')
+        for row in tqdm(range(len(int_time_df-10))):
+            count += 1
             distances[count] = (dist_formula(int_time_df['nose']['x'].loc[row+1], int_time_df['nose']['x'].loc[row], int_time_df['nose']['y'].loc[row+1], int_time_df['nose']['y'].loc[row]))
 
         distance_travelled[i] = np.sum(distances)
 
-        print('Just finished video ' + str(int(i)) + ' of ' + str(len(df_times)))
+    pd.DataFrame(distance_travelled).to_csv(os.path.join(main_dir, behavior_type +'_distance_travelled.csv'))
 
-    pd.DataFrame([distance_travelled, df_times['VideoName']]).T.set_index(1).to_csv(os.path.join(main_dir, behavior_type +'_distance_travelled.csv'))
-
-    print('All finished! Distance travelled information is saved in distance_traveled.csv in the main analysis directory')
-
-distance_travelled_btn = Button(tab_frame, text = '8: Calculate total distance traveled', command = total_distance_travelled).pack(side = 'left')
+distance_travelled_btn = Button(tab_frame, text = '8: Calculate total distance travelled', command = total_distance_travelled).pack(side = 'left')
 
 
 ### finishing the Tkinter loop
@@ -465,4 +451,5 @@ root.mainloop()
 #### few more things I might want to add ####
 ## a config file, that is saved automatically with all the directory information for a project, maybe just a csv that we could save each row as a separate path
 ## heatmap function that comes after the coordinate information is calculated, so that we can plot colored head vectors based on which behavior is happening
+## a function for making videos at the very end (TAKES A LONG TIME AND LOTS OF SPACE, multiple gbs per video)
 ## photos or graphics to make it look a bit nicer, although this is definitely not a necessity
