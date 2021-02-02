@@ -59,7 +59,7 @@ def selectROI(region, frame, main_dir):
 	## this is the function that is fed to the polygon selector tool. All I am doing here is saving the coordinates for every polygon drawn to a text file of numpy coordinates ##
 	## this allows me to save them outside of the python kernel, and they can be pulled in later at any point ##
 	def onselect(verts):
-		np.savetxt(main_dir + '\\coordinates\\' + region, verts)
+		np.savetxt(os.path.join(os.path.join(main_dir, 'coordinates'), region), verts)
 
 	polygon = PolygonSelector(ax, onselect)
 
@@ -116,7 +116,7 @@ def plot_heatmap_dark(coordinates, df, trial_frames):
 
 def time_df(df_times, v_location):
 
-	## import the time dataframeand calculate when the sociability and social novelty occur based on start time ##
+	## import the time dataframe and calculate when the sociability and social novelty occur based on start time ##
 	## in the future, it would be nice to be able to specify ONLY soc, or ONLY snp, or both ##
 	df_times.dropna(inplace = True)
 

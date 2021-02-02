@@ -18,6 +18,7 @@ from tkinter import ttk, simpledialog
 from PIL import ImageTk, Image
 from analysis_functions_master import *
 from tqdm import tqdm
+from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
 ####### Creating all of the frames for the GUI #########
 
@@ -122,8 +123,8 @@ def annotate_window():
 
     ## creating a directory to save the numpy text files that contain coordinates for the annotations made at this step ##
 
-    if not os.path.exists(main_dir + '\\coordinates'):
-        os.mkdir(main_dir + '\\coordinates')
+    if not os.path.exists(os.path.join(main_dir, 'coordinates')):
+        os.mkdir(os.path.join(main_dir, 'coordinates'))
     frame = grab_video_frame(v_location)
 
     ## list of the 5 locations I have included for analysis ##
@@ -144,11 +145,13 @@ def create_coord_window():
 
     ## loading in the 5 annotation zones that were created in the last step ##
     
-    left_side = np.loadtxt(main_dir + '\\coordinates\\left_side')
-    x_chamber = np.loadtxt(main_dir + '\\coordinates\\x_chamber')
-    y_chamber = np.loadtxt(main_dir + '\\coordinates\\y_chamber')
-    right_side = np.loadtxt(main_dir + '\\coordinates\\right_side')
-    middle = np.loadtxt(main_dir + '\\coordinates\\middle')
+    coord_path = os.path.join(main_dir, 'coordinates')
+
+    left_side = np.loadtxt(os.path.join(coord_path, 'left_side'))
+    x_chamber = np.loadtxt(os.path.join(coord_path, 'x_chamber'))
+    y_chamber = np.loadtxt(os.path.join(coord_path, 'y_chamber'))
+    right_side = np.loadtxt(os.path.join(coord_path, 'right_side'))
+    middle = np.loadtxt(os.path.join(coord_path, 'middle'))
     
     ## calculate the padded interaction zone, that is 40 pixels larger in every direction (than the base of the chamber) ##
     ## In the future I would like to make the padding size flexible based on user input if we think it might need to change ##
@@ -189,8 +192,9 @@ def prep_time_df():
 
     ## function for reading in the time dataframe. this is a separate excel/csv that contains the time that the animal was actually placed in the chamber (this is not always the very start of the video)
     global df_times
-    df_times = pd.read_csv(os.path.join(main_dir, df_times_filename))
     
+    df_times = pd.read_csv(os.path.join(main_dir, df_times_filename))
+
     ## adjusting the timedf with time_df function to calculate start and stop frames
     df_times = time_df(df_times, v_location)
 
@@ -213,8 +217,8 @@ def preprocess_df():
     print('Now preprocessing and smoothing the raw DLC output')
     global processed_csv_output_folder
 
-    if not os.path.exists(main_dir + '\\smoothed_csv_output'):
-        os.mkdir(main_dir + '\\smoothed_csv_output')
+    if not os.path.exists(os.path.join(main_dir, 'smoothed_csv_output')):
+        os.mkdir(os.path.join(main_dir, 'smoothed_csv_output'))
         
         processed_csv_output_folder = os.path.join(main_dir, 'smoothed_csv_output')
 
@@ -223,8 +227,46 @@ def preprocess_df():
             count += 1
             process_csv(pd.read_csv(os.path.join(csv_output_folder, file), header = [1, 2])).to_csv(os.path.join(processed_csv_output_folder, file))
             print('Finished file ', str(count), ' of', str(len(os.listdir(csv_output_folder))))
-    elif os.path.exists(main_dir + '\\smoothed_csv_output'):
+    elif os.path.exists(os.path.join(main_dir, 'smoothed_csv_output')):
         processed_csv_output_folder = os.path.join(main_dir, 'smoothed_csv_output')
+
+    #crop videos with time_df
+    global cropped_videos
+
+    if not os.path.exists(os.path.join(main_dir, 'cropped_videos')):
+        os.mkdir(os.path.join(main_dir, 'cropped_videos'))
+
+        cropped_videos = os.path.join(main_dir, 'cropped_videos')
+
+        count = 0
+        #TODO Make sure videos are getting correct times
+        #TODO make sure the df_times is in order
+        sorted_files = os.listdir(v_location)
+        sorted_files.sort()
+
+        for file in sorted_files:
+            count += 1
+            print("File " + str(count) + " is " + file)
+            #TODO generalize video cropping 
+            
+            video1 = os.path.join(v_location, file)
+            start_time_snp = df_times['StartNovelSec'][count-1]
+            print("start time " + str(count) + " is " + str(df_times['StartNovelSec'][count-1]))
+            end_time_snp = df_times['StopNovelSec'][count-1]   
+            start_time_soc = df_times['StartSocialSec'][count-1]
+            end_time_soc = df_times['StopSocialSec'][count-1]
+
+            snp_vid = os.path.join(cropped_videos, file + "_snp.mp4")
+            soc_vid = os.path.join(cropped_videos, file + "_soc.mp4")
+
+            ffmpeg_extract_subclip(video1, start_time_snp, end_time_snp, targetname=snp_vid)
+            ffmpeg_extract_subclip(video1, start_time_soc, end_time_soc, targetname=soc_vid)
+            
+            
+            
+            print('Finished cropping ', str(count))
+    elif os.path.exists(os.path.join(main_dir, 'cropped_videos')):
+        cropped_videos = os.path.join(main_dir, 'cropped_videos')
 
     print('CSVs smoothed and imported!')
 
