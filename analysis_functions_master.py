@@ -329,7 +329,7 @@ def dist_formula(x1, y1, x2, y2):
 def calculate_investigation_times_single(df, possible_places, extra_coords):
 	
 	import numpy as np
-	import pandas as pd
+	import pandas as pd\
 	import matplotlib.pyplot as plt
 	from shapely.geometry import Point
 	from shapely.geometry.polygon import Polygon
