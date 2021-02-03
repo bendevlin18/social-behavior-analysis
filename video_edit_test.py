@@ -49,12 +49,36 @@ print(file_list)
 #import time
 #time1 = time.perf_counter()
 
-#framesFile = "/Users/Justin/Desktop/sample_frames/*.png"
-#outputFile = "/Users/Justin/Desktop/frame_movie.mp4"
+framesFile = "/Users/Justin/Desktop/sample_frames/*.png"
+outputFile = "/Users/Justin/Desktop/frame_movie.mp4"
 
 #stream = ffmpeg.input(framesFile, pattern_type='glob', framerate=30)
 #stream = ffmpeg.output(stream,'frame_movie.mp4')
 #ffmpeg.run(stream)
+
+csv_direc = "/Users/Justin/Desktop/crop_practice/smoothed_csv_output/"
+
+first_vid = os.listdir(csv_direc)[0]
+print(first_vid)
+video_suffix_start = first_vid.index("DLC")
+video_suffix = first_vid[video_suffix_start: len(first_vid)]
+
+from tkinter import *
+from tkinter import simpledialog
+root = Tk()
+root.grid_rowconfigure(0, weight=1)
+root.grid_columnconfigure(0, weight=1)
+#behavior_type = simpledialog.Dialog(root, title="Which type of behavior?")
+direc_frame = LabelFrame(root, padx = 5, pady = 5)
+direc_frame.grid(padx = 10, pady = 10, sticky='nsew')
+df_times_frame = LabelFrame(root, padx = 5, pady = 5)
+df_times_frame.grid(padx = 10, pady = 10, sticky='nsew')
+tab_frame = LabelFrame(root, padx = 5, pady = 5)
+tab_frame.grid(padx = 10, pady = 10, sticky='nsew')
+
+main_direc_label = Label(direc_frame, text = 'Which type of behavior?').grid(row = 1, column = 0, sticky='nsew')
+main_direc_button = Button(tab_frame, text = 'Social', command = create_coord_window).pack(side = 'left')
+main_coord_import_btn = Button(tab_frame, text = 'Novel', command = create_coord_window).pack(side = 'right')
 
 #time2 = time.perf_counter()
 

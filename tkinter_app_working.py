@@ -323,10 +323,16 @@ def calculate_investigation_times(bodypart = 'nose'):
 
     global video_suffix
     global behavior_type
-    video_suffix = simpledialog.askstring('DLC_resnet50_social_behavior_allMay27shuffle1_250000', 'What is the DLC suffix?')
+    #video_suffix = simpledialog.askstring('DLC_resnet50_social_behavior_allMay27shuffle1_250000', 'What is the DLC suffix?')
+    #trying to get video_suffix without needing to ask for it
+    csv_direc = os.path.join(main_dir, processed_csv_output_folder)
+    first_vid = os.listdir(csv_direc)[0]
+    video_suffix_start = first_vid.index("DLC")
+    video_suffix = first_vid[video_suffix_start: len(first_vid)]
+
+
     behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
     final_dict = {}
-    csv_direc = os.path.join(main_dir, processed_csv_output_folder)
 
 
     for i in range(len(df_times)):
@@ -478,8 +484,13 @@ export_labelled_frames_btn = Button(tab_frame, text = '7: Label frames from a vi
 def total_distance_travelled():
 
     behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
-    video_suffix = simpledialog.askstring('DLC_resnet50_social_behavior_allMay27shuffle1_250000', 'What is the DLC suffix?')
+    #video_suffix = simpledialog.askstring('DLC_resnet50_social_behavior_allMay27shuffle1_250000', 'What is the DLC suffix?')
+    #trying to get video_suffix without needing to ask for it
     csv_direc = os.path.join(main_dir, processed_csv_output_folder)
+    first_vid = os.listdir(csv_direc)[0]
+    video_suffix_start = first_vid.index("DLC")
+    video_suffix = first_vid[video_suffix_start: len(first_vid)]
+    
     distance_travelled = [0] * len(df_times)
 
     for i in range(len(df_times)):
