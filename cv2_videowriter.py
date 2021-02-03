@@ -3,12 +3,14 @@ import numpy as np
 import glob
 import os
 
-filenames = os.listdir('C:\\Users\\Ben\\Desktop\\labelled_frames\\sample_frames')
+direc = 'C:\\Users\\Ben\\Desktop\\labelled_frames\\sample_frames\\'
+
+filenames = os.listdir(direc)
 
 img_array = []
 for filename in filenames:
     print(filename)
-    img = cv2.imread('C:\\Users\\Ben\\Desktop\\labelled_frames\\sample_frames\\' + filename)
+    img = cv2.imread(os.path.join(direc, filename))
     height, width, layers = img.shape
     size = (width,height)
     img_array.append(img)
