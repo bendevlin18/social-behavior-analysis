@@ -410,6 +410,7 @@ def calculate_investigation_times(bodypart = 'nose'):
         output_df.set_index(['index', 'type'], inplace = True)
 
         print('Just finished Video ' + str(i + 1) + ' of ' + str(len(df_times)))
+        # frame_val.to_csv(os.path.join(main_dir, behavior_type + '_frame_val_output.csv'))
     output_df.to_csv(os.path.join(main_dir, behavior_type + '_output.csv'))
 
     invest_output = Label(root, text = """
@@ -481,30 +482,6 @@ def export_frames_with_label():
 
 export_labelled_frames_btn = Button(tab_frame, text = '7: Label frames from a video', command = export_frames_with_label).pack(side = 'left')
 
-
-
-
-
-def create_annotated_videos():
-    behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
-    video_name = simpledialog.askstring('Enter video name', 'Which behavior would you like to analyze? (Social or Novel)')
-    video_to_label = filedialog.askopenfilename(initialdir = cropped_videos, title = 'Select a video that you want to label!')
-    video_to_label_path = os.path.join(cropped_videos, video_to_label)
-    csv_to_label = filedialog.askopenfilename(initialdir = processed_csv_output_folder, title = 'Select the corresponding csv file')
-    csv_direc = os.path.join(main_dir, processed_csv_output_folder)
-    df = pd.read_csv(os.path.join(csv_direc, csv_to_label), header = [0, 1])
-    print('processing....')
-    print(df)
-    
-    int_df = df.loc[df_times['Start' + behavior_type + 'Frames'][1]:df_times['Stop' + behavior_type + 'Frames'][1]]
-    int_df.columns = df.columns
-    print(int_df)    ### need to lose frame information and return it back to 0:end         
-    int_df.reset_index(drop=True, inplace = True) 
-    invest_times = calculate_investigation_times_single(int_df, possible_places, extra_coords)
-    label_frames(int_df, video_to_label_path, frame_val = invest_times, output_dir = os.path.join(main_dir, 'testing_labelled_video'))
-
-
-create_annotated_videos_btn = Button(tab_frame, text = '8: Annotate a video', command = create_annotated_videos).pack(side = 'left')
 
 ##### Button for step8 - calculating total distance travelled for each trial
 
