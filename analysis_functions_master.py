@@ -174,43 +174,54 @@ def check_coords(coords, possible_places):
 	## in the example above, the nose would be in the y_zone on the right side ##
 	return x 
 
+### extracting index locations for any uncertain groups
+def extract_uncertain_groups(df, bodypart = 'nose', uncertainty = 0.95):
+	import numpy as np
+	import pandas as pd
+	import more_itertools as mit
+	import os
+	
+	iterable = df[df[bodypart]['likelihood'] < uncertainty].index.values
+    
+	return [list(group) for group in mit.consecutive_groups(iterable)]
+
+
+### building a function to increment the averages between the two values
+def increment_average(two_vals, inc_len):
+    
+    increment = (two_vals[1] - two_vals[0]) / (inc_len + 2)
+    vals = []
+    temp = two_vals[0]
+    for i in range(inc_len):
+        temp = temp + increment
+        vals = np.append(vals, temp)
+        
+    return vals
 
 #### function for processing the raw csv files
 #### takes likelihood values and smooths out parts where the network is uncertain
+
 def process_csv(df):
-    nosex = df['nose']['x'].values
-    nosey = df['nose']['y'].values
+	### need to define a list of all the bodyparts and the two coordinates
+	bodyparts = ['nose', 'right ear', 'left ear', 'tail']
+	coordinates = ['x', 'y']
 
-    leftx = df['left ear']['x'].values
-    lefty = df['left ear']['y'].values
+	### loop through the bodyparts
+	for bodypart in bodyparts:
+		### step 1, extract uncertainties 
+		uncertain_ilocs = extract_uncertain_groups(df, uncertainty = .95, bodypart = bodypart)
+		### step 2, loop through x and y coordinates, assign incrementally averaged values
+		for coord in coordinates:
+			print('Smoothing out: ', bodypart + ' ' + coord)
+			for group in uncertain_ilocs:
+				try:
+					df.replace(df[bodypart][coord][group].values, increment_average([df[bodypart][coord][group[0] - 1], df[bodypart][coord][group[-1] + 1]], len(group)), inplace = True)
+				except:
+					pass
 
-    rightx = df['right ear']['x'].values
-    righty = df['right ear']['y'].values
+	df.set_index(df.columns[0], inplace = True)
 
-    tailx = df['tail']['x'].values
-    taily = df['tail']['y'].values
-
-    for i in range(len(df) - 1):
-        i = i+1
-        if df['nose']['likelihood'].loc[i] < 0.98:
-            nosex[i] = nosex[i-1]
-            nosey[i] = nosey[i-1]
-
-            rightx[i] = rightx[i-1]
-            righty[i] = righty[i-1]
-
-            leftx[i] = leftx[i-1]
-            lefty[i] = lefty[i-1]
-
-            tailx[i] = tailx[i-1]
-            taily[i] = taily[i-1]
-            
-    df_processed = pd.DataFrame([nosex, nosey, rightx, righty, leftx, lefty, tailx, taily]).T
-    colnames = df.T.loc[[('nose', 'x'), ('nose', 'y'), ('right ear', 'x'), ('right ear', 'y'), ('left ear', 'x'), ('left ear', 'y'), ('tail', 'x'), ('tail', 'y')]].T.columns
-    
-    df_processed.columns = colnames
-    
-    return df_processed
+	return df
 
 
 def check_climbing(df, coords):
@@ -275,9 +286,7 @@ def export_labelled_frames(df, vname, frame_val, output_dir, investigation = Tru
 	import pandas as pd
 	import cv2
 	import os
-	import subprocess
-	import sys
-	from sys import platform
+	
 
 	video = cv2.VideoCapture(vname)
 
@@ -315,23 +324,30 @@ def export_labelled_frames(df, vname, frame_val, output_dir, investigation = Tru
 		success,image = video.read()
 		count += 1
 
+	
+def ffmpeg_make_video(main_dir, labelled_frames_direc, vname):
+	import os
+	import subprocess
+	import sys
+	from sys import platform
+	
 	video_output_dir = os.path.join(main_dir, 'labelled_videos')
 
 	if not os.path.exists(video_output_dir):
 		os.mkdir(video_output_dir)
 
 	if sys.platform == 'win32':
-		subprocess.call('ffmpeg -framerate 30 -i ' +  output_dir + '\\frame_%01d.png ' +  video_output_dir + '\\output.mp4', shell = True)
+		subprocess.call('ffmpeg -framerate 30 -i ' +  labelled_frames_direc + '\\frame_%01d.png ' +  video_output_dir + '\\' + vname + '.mp4', shell = True)
 	
 	#### CHANGE THIS TO MAC CONVENTION
 	elif sys.platform == 'darwin':
-		subprocess.call('ffmpeg -framerate 30 -i ' +  output_dir + '/frame_%01d.png ' +  video_output_dir + '/output.mp4', shell = True)
+		subprocess.call('ffmpeg -framerate 30 -i ' +  labelled_frames_direc + '/frame_%01d.png ' +  video_output_dir + '/' + vname + '.mp4', shell = True)
 
 	### clearing all the images from the hard drive
-	pngs = os.listdir(output_dir)
+	pngs = os.listdir(labelled_frames_direc)
 
 	for img in pngs:
-		os.remove(os.path.join(output_dir,img))
+		os.remove(os.path.join(labelled_frames_direc,img))
 
 
 
@@ -354,6 +370,7 @@ def calculate_investigation_times_single(df, possible_places, extra_coords):
 	from shapely.geometry import Point
 	from shapely.geometry.polygon import Polygon
 	import cv2
+	from tqdm import tqdm
 	
 	bodyparts = np.unique(df.columns.get_level_values(0))[1:]
 
@@ -361,8 +378,7 @@ def calculate_investigation_times_single(df, possible_places, extra_coords):
 
 	### now we should check the coordinates of each bodypart in each frame
 	print('Calculating Investigation Times: ')
-	for row in range(len(df)):
-		print(row / len(df))
+	for row in tqdm(range(len(df))):
 		for j in range(len(bodyparts)):
 			arr[row][j] = check_coords(df[bodyparts[j]][['x', 'y']].loc[row].values, possible_places)
 			
@@ -375,8 +391,7 @@ def calculate_investigation_times_single(df, possible_places, extra_coords):
 	### now we want to check each frame in our array, and create a frame_val array that holds info about where the mouse's head was detected
 	z = -1
 	frame_val = np.zeros(shape = len(arr), dtype = 'object')
-	for frame in range(len(arr)):
-		print(int(100*(frame / len(arr))))
+	for frame in tqdm(range(len(arr))):
 		z = z + 1
 		comparison_x = arr[frame][0:1] == x_inv
 		comparison_y = arr[frame][0:1] == y_inv

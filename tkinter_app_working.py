@@ -18,7 +18,6 @@ from tkinter import ttk, simpledialog
 from PIL import ImageTk, Image
 from analysis_functions_master import *
 from tqdm import tqdm
-from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
 ####### Creating all of the frames for the GUI #########
 
@@ -53,7 +52,7 @@ tab_frame.grid(padx = 10, pady = 10, sticky='nsew')
 
 root.title('Home Page')
 font_style_big = tkFont.Font(family="Lucida Grande", size=50)
-font_style_small = tkFont.Font(family="Lucida Grande", size=35)
+font_style_small = tkFont.Font(family="Lucida Grande", size=5)
 main_page_label = Label(header_frame, text = 'Main page', font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
 ######### Button for grabbing the main analysis directory #########
@@ -230,43 +229,43 @@ def preprocess_df():
     elif os.path.exists(os.path.join(main_dir, 'smoothed_csv_output')):
         processed_csv_output_folder = os.path.join(main_dir, 'smoothed_csv_output')
 
-    #crop videos with time_df
-    global cropped_videos
+    # #crop videos with time_df
+    # global cropped_videos
 
-    if not os.path.exists(os.path.join(main_dir, 'cropped_videos')):
-        os.mkdir(os.path.join(main_dir, 'cropped_videos'))
+    # if not os.path.exists(os.path.join(main_dir, 'cropped_videos')):
+    #     os.mkdir(os.path.join(main_dir, 'cropped_videos'))
 
-        cropped_videos = os.path.join(main_dir, 'cropped_videos')
+    #     cropped_videos = os.path.join(main_dir, 'cropped_videos')
 
-        count = -1
-        #TODO Make sure videos are getting correct times
-        #TODO make sure the df_times is in order
-        sorted_files = os.listdir(v_location)
-        sorted_files.sort()
+    #     count = -1
+    #     #TODO Make sure videos are getting correct times
+    #     #TODO make sure the df_times is in order
+    #     sorted_files = os.listdir(v_location)
+    #     sorted_files.sort()
 
-        for file in sorted_files:
-            count += 1
-            print("File " + str(count) + " is " + file)
-            #TODO generalize video cropping 
+    #     for file in sorted_files:
+    #         count += 1
+    #         print("File " + str(count) + " is " + file)
+    #         #TODO generalize video cropping 
             
-            video1 = os.path.join(v_location, file)
-            start_time_snp = df_times['StartNovelSec'][count]
-            print("start time " + str(count) + " is " + str(df_times['StartNovelSec'][count]))
-            end_time_snp = df_times['StopNovelSec'][count]   
-            start_time_soc = df_times['StartSocialSec'][count]
-            end_time_soc = df_times['StopSocialSec'][count]
+    #         video1 = os.path.join(v_location, file)
+    #         start_time_snp = df_times['StartNovelSec'][count]
+    #         print("start time " + str(count) + " is " + str(df_times['StartNovelSec'][count]))
+    #         end_time_snp = df_times['StopNovelSec'][count]   
+    #         start_time_soc = df_times['StartSocialSec'][count]
+    #         end_time_soc = df_times['StopSocialSec'][count]
 
-            snp_vid = os.path.join(cropped_videos, file + "_snp.mp4")
-            soc_vid = os.path.join(cropped_videos, file + "_soc.mp4")
+    #         snp_vid = os.path.join(cropped_videos, file + "_snp.mp4")
+    #         soc_vid = os.path.join(cropped_videos, file + "_soc.mp4")
 
-            ffmpeg_extract_subclip(video1, start_time_snp, end_time_snp, targetname=snp_vid)
-            ffmpeg_extract_subclip(video1, start_time_soc, end_time_soc, targetname=soc_vid)
+    #         ffmpeg_extract_subclip(video1, start_time_snp, end_time_snp, targetname=snp_vid)
+    #         ffmpeg_extract_subclip(video1, start_time_soc, end_time_soc, targetname=soc_vid)
             
             
             
-            print('Finished cropping ', str(count))
-    elif os.path.exists(os.path.join(main_dir, 'cropped_videos')):
-        cropped_videos = os.path.join(main_dir, 'cropped_videos')
+    #         print('Finished cropping ', str(count))
+    # elif os.path.exists(os.path.join(main_dir, 'cropped_videos')):
+    #     cropped_videos = os.path.join(main_dir, 'cropped_videos')
 
     print('CSVs smoothed and imported!')
 
@@ -339,7 +338,7 @@ def calculate_investigation_times(bodypart = 'nose'):
  
         ### first we will want to get the right dataframe, so we should import it based on the df_times location and clean it
 
-        df = pd.read_csv(os.path.join(csv_direc, df_times['VideoName'][i] + video_suffix), header = [1, 2], index_col = 0)
+        df = pd.read_csv(os.path.join(csv_direc, df_times['VideoName'][i] + video_suffix), header = [0, 1]).dropna()
         bodyparts = np.unique(df.columns.get_level_values(0))        
 
         int_df = df.loc[df_times['Start' + behavior_type + 'Frames'][i]:df_times['Stop' + behavior_type + 'Frames'][i]]
@@ -467,7 +466,7 @@ def export_frames_with_label():
     video_to_label_path = os.path.join(v_location, video_to_label)
     csv_to_label = filedialog.askopenfilename(initialdir = processed_csv_output_folder, title = 'Select the corresponding csv file')
     csv_direc = os.path.join(main_dir, processed_csv_output_folder)
-    df = pd.read_csv(os.path.join(csv_direc, csv_to_label), header = [0, 1])
+    df = pd.read_csv(os.path.join(csv_direc, csv_to_label), header = [0, 1]).dropna().reset_index(drop = True)
     invest_times = calculate_investigation_times_single(df, possible_places, extra_coords)
     export_labelled_frames(df, video_to_label_path, frame_val = invest_times, output_dir = os.path.join(main_dir, 'labelled_frames'))
     labelled_frames_output = Label(root, text = """
@@ -482,6 +481,12 @@ def export_frames_with_label():
 
 export_labelled_frames_btn = Button(tab_frame, text = '7: Label frames from a video', command = export_frames_with_label).pack(side = 'left')
 
+
+
+def build_video_from_frames():
+    ffmpeg_make_video(main_dir, os.path.join(main_dir, 'labelled_frames'), vname = 'testing')
+
+make_video_from_frames_btn = Button(tab_frame, text = 'Make video from frames', command = build_video_from_frames).pack(side = 'left')
 
 ##### Button for step8 - calculating total distance travelled for each trial
 
