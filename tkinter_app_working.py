@@ -479,7 +479,7 @@ def export_frames_with_label():
     invest_times = pd.read_csv(os.path.join(frame_values_folder, frame_val_to_label))
 
 
-    export_labelled_frames(df, video_to_label_path, frame_val = invest_times, output_dir = os.path.join(main_dir, 'labelled_frames'))
+    export_labelled_frames(df, video_to_label_path, frame_val = invest_times['0'].values, output_dir = os.path.join(main_dir, 'labelled_frames'))
     labelled_frames_output = Label(root, text = """
     
     Frames have been labelled!
