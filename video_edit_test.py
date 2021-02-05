@@ -5,16 +5,82 @@ import moviepy.editor as mpy
 import os
 import ffmpeg
 import pandas as pd
+from tkinter import filedialog
+from analysis_functions_master import *
 
-main_dir = "/Users/Justin/Desktop/crop_practice"
+main_dir = "Users/Justin/Desktop/crop_practice"
+frame_values_folder = os.path.join(main_dir, 'frame_values')
 
-vid_file = "/Users/Justin/Desktop/crop_practice/videos"
+#possible_places and extra_coords are all defined earlier and are not dependent on the video
 
-file_list = os.listdir(vid_file)
+#defines df as csv for video of interest
+#could we just change this to the frame_val csv?
+csv_to_label = filedialog.askopenfilename(initialdir = frame_values_folder, title = 'Select the corresponding csv file')
+csv_direc = os.path.join(main_dir, frame_values_folder)
+df = pd.read_csv(os.path.join(csv_direc, csv_to_label), header = [0, 1]).dropna().reset_index(drop = True)
+print(os.path.join(csv_direc, csv_to_label))
+print(df)
 
-file_list.sort()
+def calculate_investigation_times_single(df, possible_places, extra_coords):
+	
+	import numpy as np
+	import pandas as pd
+	import matplotlib.pyplot as plt
+	from shapely.geometry import Point
+	from shapely.geometry.polygon import Polygon
+	import cv2
+	from tqdm import tqdm
+	
+	bodyparts = np.unique(df.columns.get_level_values(0))[1:]
 
-print(file_list)
+	arr = np.zeros(shape = (len(df), len(bodyparts), len(possible_places)))
+
+	### now we should check the coordinates of each bodypart in each frame
+	print('Calculating Investigation Times: ')
+	for row in tqdm(range(len(df))):
+		for j in range(len(bodyparts)):
+			arr[row][j] = check_coords(df[bodyparts[j]][['x', 'y']].loc[row].values, possible_places)
+			
+	print('Array Constructed!')
+
+	### set which patterns mean x vs y investigation, only for the first three bodyparts (nose and ears, cuz we don't care about tail base yet)
+	x_inv = np.array([[1., 0., 1., 0., 0.]])
+	y_inv = np.array([[0., 1., 0., 0., 1.]])
+
+	### now we want to check each frame in our array, and create a frame_val array that holds info about where the mouse's head was detected
+	z = -1
+	frame_val = np.zeros(shape = len(arr), dtype = 'object')
+	for frame in tqdm(range(len(arr))):
+		z = z + 1
+		comparison_x = arr[frame][0:1] == x_inv
+		comparison_y = arr[frame][0:1] == y_inv
+
+		if comparison_x.all() == True:
+			if check_orientation_single(df, z, extra_coords) == 'oriented':
+				frame_val[z] = 'X Investigation'
+			elif check_orientation_single(df, z, extra_coords) == 'not_oriented':
+				frame_val[z] = 'X Close'
+		elif comparison_y.all() == True:
+			if check_orientation_single(df, z, extra_coords) == 'oriented':
+				frame_val[z] = 'Y Investigation'
+			elif check_orientation_single(df, z, extra_coords) == 'not_oriented':
+				frame_val[z] = 'Y Close'
+		else:
+			frame_val[z] = 'Somewhere else'
+		
+	print('Investigation Times Calculated!!')
+
+	return frame_val
+
+# main_dir = "/Users/Justin/Desktop/crop_practice"
+
+# vid_file = "/Users/Justin/Desktop/crop_practice/videos"
+
+# file_list = os.listdir(vid_file)
+
+# file_list.sort()
+
+# print(file_list)
 
 
 
@@ -49,36 +115,36 @@ print(file_list)
 #import time
 #time1 = time.perf_counter()
 
-framesFile = "/Users/Justin/Desktop/sample_frames/*.png"
-outputFile = "/Users/Justin/Desktop/frame_movie.mp4"
+# framesFile = "/Users/Justin/Desktop/sample_frames/*.png"
+# outputFile = "/Users/Justin/Desktop/frame_movie.mp4"
 
-#stream = ffmpeg.input(framesFile, pattern_type='glob', framerate=30)
-#stream = ffmpeg.output(stream,'frame_movie.mp4')
-#ffmpeg.run(stream)
+# #stream = ffmpeg.input(framesFile, pattern_type='glob', framerate=30)
+# #stream = ffmpeg.output(stream,'frame_movie.mp4')
+# #ffmpeg.run(stream)
 
-csv_direc = "/Users/Justin/Desktop/crop_practice/smoothed_csv_output/"
+# csv_direc = "/Users/Justin/Desktop/crop_practice/smoothed_csv_output/"
 
-first_vid = os.listdir(csv_direc)[0]
-print(first_vid)
-video_suffix_start = first_vid.index("DLC")
-video_suffix = first_vid[video_suffix_start: len(first_vid)]
+# first_vid = os.listdir(csv_direc)[0]
+# print(first_vid)
+# video_suffix_start = first_vid.index("DLC")
+# video_suffix = first_vid[video_suffix_start: len(first_vid)]
 
-from tkinter import *
-from tkinter import simpledialog
-root = Tk()
-root.grid_rowconfigure(0, weight=1)
-root.grid_columnconfigure(0, weight=1)
-#behavior_type = simpledialog.Dialog(root, title="Which type of behavior?")
-direc_frame = LabelFrame(root, padx = 5, pady = 5)
-direc_frame.grid(padx = 10, pady = 10, sticky='nsew')
-df_times_frame = LabelFrame(root, padx = 5, pady = 5)
-df_times_frame.grid(padx = 10, pady = 10, sticky='nsew')
-tab_frame = LabelFrame(root, padx = 5, pady = 5)
-tab_frame.grid(padx = 10, pady = 10, sticky='nsew')
+# from tkinter import *
+# from tkinter import simpledialog
+# root = Tk()
+# root.grid_rowconfigure(0, weight=1)
+# root.grid_columnconfigure(0, weight=1)
+# #behavior_type = simpledialog.Dialog(root, title="Which type of behavior?")
+# direc_frame = LabelFrame(root, padx = 5, pady = 5)
+# direc_frame.grid(padx = 10, pady = 10, sticky='nsew')
+# df_times_frame = LabelFrame(root, padx = 5, pady = 5)
+# df_times_frame.grid(padx = 10, pady = 10, sticky='nsew')
+# tab_frame = LabelFrame(root, padx = 5, pady = 5)
+# tab_frame.grid(padx = 10, pady = 10, sticky='nsew')
 
-main_direc_label = Label(direc_frame, text = 'Which type of behavior?').grid(row = 1, column = 0, sticky='nsew')
-main_direc_button = Button(tab_frame, text = 'Social', command = create_coord_window).pack(side = 'left')
-main_coord_import_btn = Button(tab_frame, text = 'Novel', command = create_coord_window).pack(side = 'right')
+# main_direc_label = Label(direc_frame, text = 'Which type of behavior?').grid(row = 1, column = 0, sticky='nsew')
+# main_direc_button = Button(tab_frame, text = 'Social', command = create_coord_window).pack(side = 'left')
+# main_coord_import_btn = Button(tab_frame, text = 'Novel', command = create_coord_window).pack(side = 'right')
 
 #time2 = time.perf_counter()
 
