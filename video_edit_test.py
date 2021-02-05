@@ -31,21 +31,7 @@ def calculate_investigation_times_single(df, possible_places, extra_coords):
 	import cv2
 	from tqdm import tqdm
 	
-	bodyparts = np.unique(df.columns.get_level_values(0))[1:]
-
-	arr = np.zeros(shape = (len(df), len(bodyparts), len(possible_places)))
-
-	### now we should check the coordinates of each bodypart in each frame
-	print('Calculating Investigation Times: ')
-	for row in tqdm(range(len(df))):
-		for j in range(len(bodyparts)):
-			arr[row][j] = check_coords(df[bodyparts[j]][['x', 'y']].loc[row].values, possible_places)
-			
-	print('Array Constructed!')
-
-	### set which patterns mean x vs y investigation, only for the first three bodyparts (nose and ears, cuz we don't care about tail base yet)
-	x_inv = np.array([[1., 0., 1., 0., 0.]])
-	y_inv = np.array([[0., 1., 0., 0., 1.]])
+	frame_val = df
 
 	### now we want to check each frame in our array, and create a frame_val array that holds info about where the mouse's head was detected
 	z = -1
