@@ -19,14 +19,14 @@ from PIL import ImageTk, Image
 #from analysis_functions_master import *
 from tqdm import tqdm
 
-#new files
-from annotation import *
-from video_making import *
-from calc_invest_times import *
-from smoothing import *
-from utils import *
-from time_df import *
-from heat_map import *
+# #new files
+from function_folder.annotation import *
+from function_folder.video_making import *
+from function_folder.calc_invest_times import *
+from function_folder.smoothing import *
+from function_folder.utils import *
+from function_folder.time_df import *
+from function_folder.heat_map import *
 
 ####### Creating all of the frames for the GUI #########
 
