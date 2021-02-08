@@ -19,6 +19,7 @@ from PIL import ImageTk, Image
 
 ### the first step is to just grab an example video frame so that the user can annotate where the chambers were located for this testing day ###
 
+###Annotation.py########
 def grab_video_frame(v_location):
 
 	## using the cv2 library to open up a video from the analysis directory and create a single frame ##
@@ -88,8 +89,12 @@ def plot_coordinates_frame(frame, coordinates):
 		plt.ylim(0,720)
 		plt.title('Example Coordinate Overlay - Press q to quit')
 		plt.show()
+###Annotation.py######## end
 
-
+###HeatMap.py#######
+#Want to figure out a better way to plot the heatmaps
+#want a better color map; more options, want to handle start times being off
+#play around with bins, hexsize, colormap
 def plot_heatmap(coordinates, df, trial_frames):
 		fig, ax = plt.subplots(1,1,figsize=(5,3))
 		ax.plot(coordinates[0]['left_side'][:,0], coordinates[0]['left_side'][:,1], color = 'red', linewidth = 2)
@@ -113,7 +118,14 @@ def plot_heatmap_dark(coordinates, df, trial_frames):
 		ax.plot(coordinates[1]['x_center'][0], coordinates[1]['x_center'][1], 'bo')
 		ax.plot(coordinates[1]['y_center'][0], coordinates[1]['y_center'][1], 'go')
 		ax.hexbin(df['nose']['x'].loc[trial_frames[0]:trial_frames[1]], df['nose']['y'].loc[trial_frames[0]:trial_frames[1]], bins = 10, gridsize = 50, cmap='YlOrRd')
+###HeatMap.py####### end
 
+
+
+###Time_df.py########
+#Might want to prompt user about experiment type before time_df
+#^will error out now if only Social, since it needs novel start times
+#can make 3 separate functions for both, soc only or novel only
 def time_df(df_times, v_location):
 
 	## import the time dataframe and calculate when the sociability and social novelty occur based on start time ##
@@ -149,8 +161,10 @@ def time_df(df_times, v_location):
 	## returning the prepared df_times, which has the calculated start and stop frames based on the framerate of each video ##
 	return df_times
 
+###Time_df.py######## end
 
-
+###Utils.py########
+#written generalizable
 ##### Functions for main calculations #####
 
 def check_coords(coords, possible_places):
@@ -174,6 +188,7 @@ def check_coords(coords, possible_places):
 	## in the example above, the nose would be in the y_zone on the right side ##
 	return x 
 
+###smoothing.py########
 ### extracting index locations for any uncertain groups
 def extract_uncertain_groups(df, bodypart = 'nose', uncertainty = 0.95):
 	import numpy as np
@@ -198,9 +213,11 @@ def increment_average(two_vals, inc_len):
         
     return vals
 
+
 #### function for processing the raw csv files
 #### takes likelihood values and smooths out parts where the network is uncertain
 
+#add additional argument to set the uncertainty to be set whatever you want
 def process_csv(df):
 	### need to define a list of all the bodyparts and the two coordinates
 	bodyparts = ['nose', 'right ear', 'left ear', 'tail']
@@ -209,7 +226,7 @@ def process_csv(df):
 	### loop through the bodyparts
 	for bodypart in bodyparts:
 		### step 1, extract uncertainties 
-		uncertain_ilocs = extract_uncertain_groups(df, uncertainty = .95, bodypart = bodypart)
+		uncertain_ilocs = extract_uncertain_groups(df, uncertainty = 0.95, bodypart = bodypart)
 		### step 2, loop through x and y coordinates, assign incrementally averaged values
 		for coord in coordinates:
 			print('Smoothing out: ', bodypart + ' ' + coord)
@@ -223,7 +240,10 @@ def process_csv(df):
 
 	return df
 
+###Smooting.py ######### end
 
+###Utils.py
+#comment that it still hasn't been implemented
 def check_climbing(df, coords):
 
 	## simple, alpha function for filtering frames where the animal seems to be climbing, rather than investigating ##
@@ -247,6 +267,10 @@ def check_climbing(df, coords):
 		if np.sum(distance_1, distance_2, distance_3) > 5:
 			state[z] = 'not_climbing'
 
+
+
+###calc_invest_times.py#########
+#rename as check_orientation
 def check_orientation_single(df, index_loc, extra_coords):
 
 	## main function for testing orientation of the head ##
@@ -279,6 +303,7 @@ def check_orientation_single(df, index_loc, extra_coords):
 
 ### export labelled frames function that allows you to take a video and create labelled frames with the output head vector
 
+###video_making.py########
 def export_labelled_frames(df, vname, frame_val, output_dir, investigation = True):
 	
 	## import all of the necessary packages
@@ -325,6 +350,7 @@ def export_labelled_frames(df, vname, frame_val, output_dir, investigation = Tru
 		count += 1
 
 	
+###also video_making.py
 def ffmpeg_make_video(main_dir, labelled_frames_direc, vname):
 	import os
 	import subprocess
@@ -350,7 +376,7 @@ def ffmpeg_make_video(main_dir, labelled_frames_direc, vname):
 		os.remove(os.path.join(labelled_frames_direc,img))
 
 
-
+###utils.py
 ### distance formula for calculating the total distance travelled for each animal
 
 def dist_formula(x1, y1, x2, y2):
@@ -359,9 +385,9 @@ def dist_formula(x1, y1, x2, y2):
 	return d
 
 
-
+#calc_invest_times.py
 ### funtion for calculation investigation times on only one video
-
+#should be able to replace the the big calc function from the main app with this
 def calculate_investigation_times_single(df, possible_places, extra_coords):
 	
 	import numpy as np
