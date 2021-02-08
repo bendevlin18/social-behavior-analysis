@@ -16,8 +16,17 @@ from tkinter import filedialog
 import tkinter.font as tkFont
 from tkinter import ttk, simpledialog
 from PIL import ImageTk, Image
-from analysis_functions_master import *
+#from analysis_functions_master import *
 from tqdm import tqdm
+
+#new files
+from annotation import *
+from video_making import *
+from calc_invest_times import *
+from smoothing import *
+from utils import *
+from time_df import *
+from heat_map import *
 
 ####### Creating all of the frames for the GUI #########
 
@@ -329,7 +338,7 @@ def calculate_investigation_times(bodypart = 'nose'):
     video_suffix_start = first_vid.index("DLC")
     video_suffix = first_vid[video_suffix_start: len(first_vid)]
 
-
+    #should try to calculate investigation times for both social and novel
     behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
     final_dict = {}
 
@@ -342,9 +351,12 @@ def calculate_investigation_times(bodypart = 'nose'):
         ### first we will want to get the right dataframe, so we should import it based on the df_times location and clean it
 
         df = pd.read_csv(os.path.join(csv_direc, df_times['VideoName'][i] + video_suffix), header = [0, 1]).dropna()
+        #should be able to cut from 346 to 415 and use single
         bodyparts = np.unique(df.columns.get_level_values(0))        
 
+        #changed so that all the frames are included
         int_df = df.loc[df_times['Start' + behavior_type + 'Frames'][i]:df_times['Stop' + behavior_type + 'Frames'][i]]
+        
 
         ### need to lose frame information and return it back to 0:end         
         int_df.reset_index(drop=True, inplace = True) 
@@ -407,15 +419,16 @@ def calculate_investigation_times(bodypart = 'nose'):
         global output_df
         output_df = pd.DataFrame(final_dict, index = ['Somewhere else','X Investigation', 'Y Investigation', 'X Close', 'Y Close']).T
         
-        output_df['type'] = [behavior_type] * len(output_df)
+        output_df['type'] = ["all"] * len(output_df)
+        ###stop cutting
         output_df.reset_index(inplace = True)
         output_df.set_index(['index', 'type'], inplace = True)
 
         print('Just finished Video ' + str(i + 1) + ' of ' + str(len(df_times)))
         #makes a new folder and saves frame_vals
-        frame_filepath = os.path.join(frame_val_dir, behavior_type + "_" + df_times['VideoName'][i]) + "_frame_val.csv"
+        frame_filepath = os.path.join(frame_val_dir, "all" + "_" + df_times['VideoName'][i]) + "_frame_val.csv"
         pd.DataFrame(frame_val).to_csv(frame_filepath)
-    output_df.to_csv(os.path.join(main_dir, behavior_type + '_output.csv'))
+    output_df.to_csv(os.path.join(main_dir, "all" + '_output.csv'))
 
     invest_output = Label(root, text = """
     
@@ -432,10 +445,10 @@ def convert_to_secs():
 
     global new_df
 
-    behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
+    #behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
 
-    if os.path.join(main_dir, behavior_type + '_output.csv'):
-        output_df = pd.read_csv(os.path.join(main_dir, behavior_type + '_output.csv'), index_col = 0)
+    if os.path.join(main_dir, "all" + '_output.csv'):
+        output_df = pd.read_csv(os.path.join(main_dir, "all" + '_output.csv'), index_col = 0)
 
     new_df = pd.DataFrame(columns = output_df.columns, index = output_df.index)
 
@@ -450,7 +463,7 @@ def convert_to_secs():
     else:
         pass
     new_df['type'] = output_df['type']
-    new_df.to_csv(os.path.join(main_dir, behavior_type + '_adjusted_output.csv'))
+    new_df.to_csv(os.path.join(main_dir, "all" + '_adjusted_output.csv'))
     secs_output = Label(root, text = """
     
     Investigation times converted to seconds!
