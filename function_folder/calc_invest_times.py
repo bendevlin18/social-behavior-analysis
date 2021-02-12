@@ -1,6 +1,8 @@
 ###calc_invest_times.py#########
 #rename as check_orientation
-def check_orientation_single(df, index_loc, extra_coords):
+from function_folder.utils import check_coords
+
+def check_orientation(df, index_loc, extra_coords):
 
     import numpy as np
 
@@ -42,7 +44,7 @@ def check_orientation_single(df, index_loc, extra_coords):
 #should be able to replace the the big calc function from the main app with this
 
 
-def calculate_investigation_times_single(df, possible_places, extra_coords):
+def calculate_investigation_times(df, possible_places, extra_coords):
 	
 	import numpy as np
 	import pandas as pd
@@ -77,14 +79,14 @@ def calculate_investigation_times_single(df, possible_places, extra_coords):
 		comparison_y = arr[frame][0:1] == y_inv
 
 		if comparison_x.all() == True:
-			if check_orientation_single(df, z, extra_coords) == 'oriented':
+			if check_orientation(df, z, extra_coords) == 'oriented':
 				frame_val[z] = 'X Investigation'
-			elif check_orientation_single(df, z, extra_coords) == 'not_oriented':
+			elif check_orientation(df, z, extra_coords) == 'not_oriented':
 				frame_val[z] = 'X Close'
 		elif comparison_y.all() == True:
-			if check_orientation_single(df, z, extra_coords) == 'oriented':
+			if check_orientation(df, z, extra_coords) == 'oriented':
 				frame_val[z] = 'Y Investigation'
-			elif check_orientation_single(df, z, extra_coords) == 'not_oriented':
+			elif check_orientation(df, z, extra_coords) == 'not_oriented':
 				frame_val[z] = 'Y Close'
 		else:
 			frame_val[z] = 'Somewhere else'

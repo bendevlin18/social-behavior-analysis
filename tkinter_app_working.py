@@ -238,47 +238,9 @@ def preprocess_df():
     elif os.path.exists(os.path.join(main_dir, 'smoothed_csv_output')):
         processed_csv_output_folder = os.path.join(main_dir, 'smoothed_csv_output')
 
-    # #crop videos with time_df
-    # global cropped_videos
-
-    # if not os.path.exists(os.path.join(main_dir, 'cropped_videos')):
-    #     os.mkdir(os.path.join(main_dir, 'cropped_videos'))
-
-    #     cropped_videos = os.path.join(main_dir, 'cropped_videos')
-
-    #     count = -1
-    #     #TODO Make sure videos are getting correct times
-    #     #TODO make sure the df_times is in order
-    #     sorted_files = os.listdir(v_location)
-    #     sorted_files.sort()
-
-    #     for file in sorted_files:
-    #         count += 1
-    #         print("File " + str(count) + " is " + file)
-    #         #TODO generalize video cropping 
-            
-    #         video1 = os.path.join(v_location, file)
-    #         start_time_snp = df_times['StartNovelSec'][count]
-    #         print("start time " + str(count) + " is " + str(df_times['StartNovelSec'][count]))
-    #         end_time_snp = df_times['StopNovelSec'][count]   
-    #         start_time_soc = df_times['StartSocialSec'][count]
-    #         end_time_soc = df_times['StopSocialSec'][count]
-
-    #         snp_vid = os.path.join(cropped_videos, file + "_snp.mp4")
-    #         soc_vid = os.path.join(cropped_videos, file + "_soc.mp4")
-
-    #         ffmpeg_extract_subclip(video1, start_time_snp, end_time_snp, targetname=snp_vid)
-    #         ffmpeg_extract_subclip(video1, start_time_soc, end_time_soc, targetname=soc_vid)
-            
-            
-            
-    #         print('Finished cropping ', str(count))
-    # elif os.path.exists(os.path.join(main_dir, 'cropped_videos')):
-    #     cropped_videos = os.path.join(main_dir, 'cropped_videos')
-
     print('CSVs smoothed and imported!')
 
-preprocess_csv_btn = Button(tab_frame, text = '4: CSVs', command = preprocess_df).pack(side = 'left')
+preprocess_csv_btn = Button(tab_frame, text = '4: Process CSVs', command = preprocess_df).pack(side = 'left')
 
 
 
@@ -290,7 +252,7 @@ preprocess_csv_btn = Button(tab_frame, text = '4: CSVs', command = preprocess_df
 def show_heatmaps():
     coordinates = [possible_places, extra_coords]
 
-    ## extracting the DLC csv output from the csv_output folder that MUST be in the master analysis directory ##
+    ## extracting the DLC csv output from the csv_output folder that is in the master analysis directory ##
     ## creating a heatmaps folder to save the heatmaps for each video ##
     videos = os.listdir(os.path.join(main_dir, processed_csv_output_folder))
 
@@ -327,7 +289,7 @@ main_heatmap_generator_btn = Button(tab_frame, text = '4: Heatmaps', command = s
 
 ######### Button for Step 5, which is the main calculation and analysis based on ROIs #########
 
-def calculate_investigation_times(bodypart = 'nose'):
+def calc_investigation_times(bodypart = 'nose'):
 
     global video_suffix
     global behavior_type
@@ -338,10 +300,6 @@ def calculate_investigation_times(bodypart = 'nose'):
     video_suffix_start = first_vid.index("DLC")
     video_suffix = first_vid[video_suffix_start: len(first_vid)]
 
-    #should try to calculate investigation times for both social and novel
-    behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
-    final_dict = {}
-
     frame_val_dir = os.path.join(main_dir, "frame_values")
     if not os.path.exists(frame_val_dir):
         os.mkdir(frame_val_dir)
@@ -350,85 +308,14 @@ def calculate_investigation_times(bodypart = 'nose'):
  
         ### first we will want to get the right dataframe, so we should import it based on the df_times location and clean it
 
-        df = pd.read_csv(os.path.join(csv_direc, df_times['VideoName'][i] + video_suffix), header = [0, 1]).dropna()
-        #should be able to cut from 346 to 415 and use single
-        bodyparts = np.unique(df.columns.get_level_values(0))        
+        df = pd.read_csv(os.path.join(csv_direc, df_times['VideoName'][i] + video_suffix), header = [0, 1], index_col = 0).dropna()
+        frame_val = calculate_investigation_times(df, possible_places, extra_coords)
 
-        #changed so that all the frames are included
-        int_df = df.loc[df_times['Start' + behavior_type + 'Frames'][i]:df_times['Stop' + behavior_type + 'Frames'][i]]
-        
-
-        ### need to lose frame information and return it back to 0:end         
-        int_df.reset_index(drop=True, inplace = True) 
-
-        arr = np.zeros(shape = (len(int_df), len(bodyparts), len(possible_places)))
-
-        ### now we should check the coordinates of each bodypart in each frame
-        
-        print('Loading in bodypart coordinates for each frame')
-        for row in tqdm(range(len(int_df))):
-            for j in range(len(bodyparts)):
-                arr[row][j] = check_coords(int_df[bodyparts[j]][['x', 'y']].loc[row].values, possible_places)
-
-        ### set which patterns mean x vs y investigation, only for the first three bodyparts (nose and ears, cuz we don't care about tail base yet)
-        if bodypart == 'nose':
-            x_inv = np.array([[1., 0., 1., 0., 0.]])
-            y_inv = np.array([[0., 1., 0., 0., 1.]])
-
-        if bodypart == 'nose_and_ears':
-            x_inv = np.array([[1., 0., 1., 0., 0.], [1., 0., 1., 0., 0.], [1., 0., 1., 0., 0.]])
-            y_inv = np.array([[0., 1., 0., 0., 1.], [1., 0., 1., 0., 0.], [1., 0., 1., 0., 0.]])       
-
-
-        print('Now comparing bodypart coordinates against annotated zones')
-        ### now we want to check each frame in our array, and create a frame_val array that holds info about where the mouse's head was detected
-        z = -1
-        frame_val = np.zeros(shape = len(arr), dtype = 'object')
-        for frame in tqdm(range(len(arr))):
-            z = z + 1
-            comparison_x = arr[frame][0:1] == x_inv
-            comparison_y = arr[frame][0:1] == y_inv
-
-            if comparison_x.all() == True:
-                if check_orientation_single(int_df, z, extra_coords) == 'oriented':
-                    frame_val[z] = 'X Investigation'
-                elif check_orientation_single(int_df, z, extra_coords) == 'not_oriented':
-                    frame_val[z] = 'X Close'
-            elif comparison_y.all() == True:
-                if check_orientation_single(int_df, z, extra_coords) == 'oriented':
-                    frame_val[z] = 'Y Investigation'
-                elif check_orientation_single(int_df, z, extra_coords) == 'not_oriented':
-                    frame_val[z] = 'Y Close'
-            else:
-                frame_val[z] = 'Somewhere else'
-                
-        print(np.unique(frame_val, return_counts = True))
-        
-
-        x_invest = list(frame_val).count('X Investigation') 
-        x_close = list(frame_val).count('X Close')  
-        y_invest = list(frame_val).count('Y Investigation') 
-        y_close = list(frame_val).count('Y Close')  
-        somewhere_else = list(frame_val).count('Somewhere else')  
-                
-        final_frame_counts = [somewhere_else, x_invest, y_invest, x_close, y_close]
-
-        final_dict[df_times['VideoName'][i]] = final_frame_counts
-
-
-        global output_df
-        output_df = pd.DataFrame(final_dict, index = ['Somewhere else','X Investigation', 'Y Investigation', 'X Close', 'Y Close']).T
-        
-        output_df['type'] = ["all"] * len(output_df)
-        ###stop cutting
-        output_df.reset_index(inplace = True)
-        output_df.set_index(['index', 'type'], inplace = True)
+        #makes a new folder and saves frame_vals
+        frame_filepath = os.path.join(frame_val_dir, df_times['VideoName'][i]) + "_frame_val.csv"
+        pd.DataFrame(frame_val).to_csv(frame_filepath)
 
         print('Just finished Video ' + str(i + 1) + ' of ' + str(len(df_times)))
-        #makes a new folder and saves frame_vals
-        frame_filepath = os.path.join(frame_val_dir, "all" + "_" + df_times['VideoName'][i]) + "_frame_val.csv"
-        pd.DataFrame(frame_val).to_csv(frame_filepath)
-    output_df.to_csv(os.path.join(main_dir, "all" + '_output.csv'))
 
     invest_output = Label(root, text = """
     
@@ -437,7 +324,7 @@ def calculate_investigation_times(bodypart = 'nose'):
     
     , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
-main_calculate_invest_btn = Button(tab_frame, text = '5: Calculate', command = calculate_investigation_times).pack(side = 'left')
+main_calculate_invest_btn = Button(tab_frame, text = '5: Calculate', command = calc_investigation_times).pack(side = 'left')
 
 
 
@@ -508,6 +395,9 @@ export_labelled_frames_btn = Button(tab_frame, text = '7: Label', command = expo
 
 
 def build_video_from_frames():
+
+    os.listdir(os.path.join(main_dir, 'labelled_frames'))[1]
+
     ffmpeg_make_video(main_dir, os.path.join(main_dir, 'labelled_frames'), vname = 'testing')
 
 make_video_from_frames_btn = Button(tab_frame, text = 'Make video from frames', command = build_video_from_frames).pack(side = 'left')

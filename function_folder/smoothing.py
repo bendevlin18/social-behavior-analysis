@@ -52,4 +52,4 @@ def process_csv(df):
 
 	return df
 
-###Smooting.py ######### end
+### Smoothing.py ######### end

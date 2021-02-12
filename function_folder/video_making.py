@@ -6,6 +6,7 @@ def export_labelled_frames(df, vname, frame_val, output_dir, investigation = Tru
 	import pandas as pd
 	import cv2
 	import os
+	from tqdm import tqdm
 	
 
 	video = cv2.VideoCapture(vname)
@@ -20,15 +21,17 @@ def export_labelled_frames(df, vname, frame_val, output_dir, investigation = Tru
 	width  = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
 	height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 	fps = int(video.get(cv2.CAP_PROP_FPS))
+
+	print(str(vname).split('/')[-1])
 	
 	## while loop through every frame of the video and label each frame
 	success, image = video.read()
 	count = 0
+	pbar = tqdm(total=frames)
 	while success:
-		print(count / len(df))
+		pbar.update(count)
 		nose_coords = (int(df['nose']['x'].loc[count]), int(df['nose']['y'].loc[count]))
 		midpoint_coords = (int((df['right ear']['x'].loc[count] + df['left ear']['x'].loc[count]) / 2) , int((df['right ear']['y'].loc[count] + df['left ear']['y'].loc[count]) / 2))
-		print(nose_coords, midpoint_coords)
 		if frame_val[count] == 'Somewhere else':
 			color = (0, 0, 255)
 		if frame_val[count] == 'X Close':
@@ -40,9 +43,10 @@ def export_labelled_frames(df, vname, frame_val, output_dir, investigation = Tru
 		if frame_val[count] == 'Y Investigation':
 			color = (0, 255, 0)
 		image_new = cv2.line(image, nose_coords, midpoint_coords, color, 4)
-		cv2.imwrite(filename = os.path.join(output_dir, 'frame_' + str(count) + '.png'), img = image_new)
+		cv2.imwrite(filename = os.path.join(output_dir, str(vname).split('/')[-1] + '_frame_' + str(count) + '.png'), img = image_new)
 		success,image = video.read()
 		count += 1
+	pbar.close()
 
 	
 ###also video_making.py
