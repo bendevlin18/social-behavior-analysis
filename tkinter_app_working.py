@@ -326,41 +326,42 @@ def calc_investigation_times(bodypart = 'nose'):
 
 main_calculate_invest_btn = Button(tab_frame, text = '5: Calculate', command = calc_investigation_times).pack(side = 'left')
 
+########## NOT WORKING ############
 
+# def convert_to_secs():
 
-def convert_to_secs():
+#     global new_df
 
-    global new_df
+#     #behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
 
-    #behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
+#     if os.path.join(main_dir, "all" + '_output.csv'):
+#         output_df = pd.read_csv(os.path.join(main_dir, "all" + '_output.csv'), index_col = 0)
 
-    if os.path.join(main_dir, "all" + '_output.csv'):
-        output_df = pd.read_csv(os.path.join(main_dir, "all" + '_output.csv'), index_col = 0)
+#     new_df = pd.DataFrame(columns = output_df.columns, index = output_df.index)
 
-    new_df = pd.DataFrame(columns = output_df.columns, index = output_df.index)
-
-    frameRate = np.zeros(shape = len(df_times))
-    i = -1
-    for index, values in df_times.iterrows():
-        i = i + 1
-        cap = cv2.VideoCapture(os.path.join(v_location, values['VideoName'] + '.mp4'))
-        frameRate[i] = cap.get(cv2.CAP_PROP_FPS)
-        index = output_df.index[i]
-        new_df.loc[index][1:6] = (output_df.loc[index][1:6] / frameRate[i]).values
-    else:
-        pass
-    new_df['type'] = output_df['type']
-    new_df.to_csv(os.path.join(main_dir, "all" + '_adjusted_output.csv'))
-    secs_output = Label(root, text = """
+#     frameRate = np.zeros(shape = len(df_times))
+#     i = -1
+#     for index, values in df_times.iterrows():
+#         i = i + 1
+#         cap = cv2.VideoCapture(os.path.join(v_location, values['VideoName'] + '.mp4'))
+#         frameRate[i] = cap.get(cv2.CAP_PROP_FPS)
+#         index = output_df.index[i]
+#         new_df.loc[index][1:6] = (output_df.loc[index][1:6] / frameRate[i]).values
+#     else:
+#         pass
+#     new_df['type'] = output_df['type']
+#     new_df.to_csv(os.path.join(main_dir, "all" + '_adjusted_output.csv'))
+#     secs_output = Label(root, text = """
     
-    Investigation times converted to seconds!
-    Output placed in adjusted_output.csv"""
+#     Investigation times converted to seconds!
+#     Output placed in adjusted_output.csv"""
     
-    , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
+#     , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
 
-convert_2_secs_btn = Button(tab_frame, text = '6: to Secs', command = convert_to_secs).pack(side = 'left')
+# convert_2_secs_btn = Button(tab_frame, text = '6: to Secs', command = convert_to_secs).pack(side = 'left')
 
+########## NOT WORKING ############
 
 
 ##### Button for step 7 - creating labelled frames that can be stitched into a labelled video #####
@@ -387,20 +388,41 @@ def export_frames_with_label():
     
     , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
-
     ############# use FFmpeg to turn frames into movie, then delete the frames folder ##############
+    print(os.listdir(os.path.join(main_dir, 'labelled_frames'))[1])
+    vname = os.listdir(os.path.join(main_dir, 'labelled_frames'))[1]
+    ffmpeg_make_video(main_dir, os.path.join(main_dir, 'labelled_frames'), vname = vname)
 
-export_labelled_frames_btn = Button(tab_frame, text = '7: Label', command = export_frames_with_label).pack(side = 'left')
+
+export_labelled_frames_btn = Button(tab_frame, text = '7: Label one video', command = export_frames_with_label).pack(side = 'left')
 
 
+def batch_videos():
+    for i in range(len(df_times)):
+        ## now we should input each video in, make frames, and make a video, then start over
+        video_to_label_path = os.path.join(v_location, str(df_times['VideoName'][i] + '.mp4'))
 
-def build_video_from_frames():
+        ## get the coordinate dataframe
+        csv_direc = os.path.join(main_dir, processed_csv_output_folder)
+        first_vid = os.listdir(csv_direc)[0]
+        video_suffix_start = first_vid.index("DLC")
+        video_suffix = first_vid[video_suffix_start: len(first_vid)]
+        csv_to_label = os.path.join(processed_csv_output_folder, str(df_times['VideoName'][i] + video_suffix))
+        df = pd.read_csv(csv_to_label, header = [0, 1]).dropna().reset_index(drop = True)
+        
+        ## load investigation times from frame_values
+        frame_values_folder = os.path.join(main_dir, 'frame_values')
+        frame_val_to_label = os.path.join(frame_values_folder, str(df_times['VideoName'][i] + '_frame_val.csv'))
+        invest_times = pd.read_csv(os.path.join(frame_values_folder, frame_val_to_label))
 
-    os.listdir(os.path.join(main_dir, 'labelled_frames'))[1]
+        ## now we are labelling the frames
+        export_labelled_frames(df, video_to_label_path, frame_val = invest_times['0'].values, output_dir = os.path.join(main_dir, 'labelled_frames'))
 
-    ffmpeg_make_video(main_dir, os.path.join(main_dir, 'labelled_frames'), vname = 'testing')
+        ## finally, use ffmpeg to build the video from frames, and delete the frames
+        vname = os.listdir(os.path.join(main_dir, 'labelled_frames'))[1]
+        ffmpeg_make_video(main_dir, os.path.join(main_dir, 'labelled_frames'), vname = df_times['VideoName'][i])
 
-make_video_from_frames_btn = Button(tab_frame, text = 'Make video from frames', command = build_video_from_frames).pack(side = 'left')
+make_video_from_frames_btn = Button(tab_frame, text = 'Batch Video Making', command = batch_videos).pack(side = 'left')
 
 ##### Button for step8 - calculating total distance travelled for each trial
 
