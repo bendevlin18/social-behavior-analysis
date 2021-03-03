@@ -263,13 +263,13 @@ def show_heatmaps():
 
 
     ## loop through the list of videos and plot a heatmap on them
-    for i in range(len(videos)):
+    for i in tqdm(range(len(videos))):
         if 'csv' in videos[i]:
-            df = pd.read_csv(os.path.join(main_dir, processed_csv_output_folder, videos[i]), header = [0, 1])
+            df = pd.read_csv(os.path.join(main_dir, processed_csv_output_folder, videos[i]), header = [0, 1]).dropna()
 
-            trial_frames = (df_times['Start' + behavior_type + 'Frames'][i] + 30, df_times['Stop' + behavior_type + 'Frames'][i] + 30)
+            trial_frames = (df_times['Start' + behavior_type + 'Frames'][i], df_times['Stop' + behavior_type + 'Frames'][i])
 
-            plot_heatmap_dark(coordinates, df, trial_frames)
+            plot_heatmap_convolved(coordinates, df, trial_frames)
 
             plt.savefig(os.path.join(main_dir, behavior_type + '_heatmaps', videos[i] + '.png'))
             print(videos[i] + ' heatmap saved!')
@@ -328,38 +328,39 @@ main_calculate_invest_btn = Button(tab_frame, text = '5: Calculate', command = c
 
 ########## NOT WORKING ############
 
-# def convert_to_secs():
+def convert_to_secs():
+    global output_df
 
-#     global new_df
+    behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
 
-#     #behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
+    frame_val_dir = os.path.join(main_dir, "frame_values")
 
-#     if os.path.join(main_dir, "all" + '_output.csv'):
-#         output_df = pd.read_csv(os.path.join(main_dir, "all" + '_output.csv'), index_col = 0)
+    ### first, we need to get the column IDs
+    df = pd.read_csv(os.path.join(frame_val_dir, df_times['VideoName'][0] + '_frame_val.csv'))
+    status, frames = np.unique(df['0'], return_counts = True)
+    final_df = pd.DataFrame(index = np.append('VideoName', status)).T.set_index('VideoName')
 
-#     new_df = pd.DataFrame(columns = output_df.columns, index = output_df.index)
+    ### now loop through every video and calculate the # of frames spent for each, then divide by framerate
+    for index, values in df_times.iterrows():
 
-#     frameRate = np.zeros(shape = len(df_times))
-#     i = -1
-#     for index, values in df_times.iterrows():
-#         i = i + 1
-#         cap = cv2.VideoCapture(os.path.join(v_location, values['VideoName'] + '.mp4'))
-#         frameRate[i] = cap.get(cv2.CAP_PROP_FPS)
-#         index = output_df.index[i]
-#         new_df.loc[index][1:6] = (output_df.loc[index][1:6] / frameRate[i]).values
-#     else:
-#         pass
-#     new_df['type'] = output_df['type']
-#     new_df.to_csv(os.path.join(main_dir, "all" + '_adjusted_output.csv'))
-#     secs_output = Label(root, text = """
-    
-#     Investigation times converted to seconds!
-#     Output placed in adjusted_output.csv"""
-    
-#     , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
+        df = pd.read_csv(os.path.join(frame_val_dir, values['VideoName'] + '_frame_val.csv'))
+
+        i1 = int(values['Start' + behavior_type + 'Frames'])
+        i2 = int(values['Stop' + behavior_type + 'Frames'])
+
+        cap = cv2.VideoCapture(os.path.join(v_location, values['VideoName'] + '.mp4'))
+        frameRate = cap.get(cv2.CAP_PROP_FPS)
+            
+        status, frames = np.unique(df['0'][i1:i2], return_counts = True)
+
+        output_df = pd.DataFrame(np.append(values['VideoName'], frames), np.append('VideoName', status)).T.set_index('VideoName').astype('float')/frameRate
+
+        final_df = final_df.append(output_df)
+
+    final_df.to_csv(os.path.join(main_dir, behavior_type + '_output.csv'))
 
 
-# convert_2_secs_btn = Button(tab_frame, text = '6: to Secs', command = convert_to_secs).pack(side = 'left')
+convert_2_secs_btn = Button(tab_frame, text = '6: Calculate output in seconds', command = convert_to_secs).pack(side = 'left')
 
 ########## NOT WORKING ############
 
@@ -367,34 +368,34 @@ main_calculate_invest_btn = Button(tab_frame, text = '5: Calculate', command = c
 ##### Button for step 7 - creating labelled frames that can be stitched into a labelled video #####
 
 
-def export_frames_with_label():
-    video_to_label = filedialog.askopenfilename(initialdir = v_location, title = 'Select a video that you want to label!')
-    video_to_label_path = os.path.join(v_location, video_to_label)
-    csv_to_label = filedialog.askopenfilename(initialdir = processed_csv_output_folder, title = 'Select the corresponding csv file')
-    csv_direc = os.path.join(main_dir, processed_csv_output_folder)
-    df = pd.read_csv(os.path.join(csv_direc, csv_to_label), header = [0, 1]).dropna().reset_index(drop = True)
+# def export_frames_with_label():
+#     video_to_label = filedialog.askopenfilename(initialdir = v_location, title = 'Select a video that you want to label!')
+#     video_to_label_path = os.path.join(v_location, video_to_label)
+#     csv_to_label = filedialog.askopenfilename(initialdir = processed_csv_output_folder, title = 'Select the corresponding csv file')
+#     csv_direc = os.path.join(main_dir, processed_csv_output_folder)
+#     df = pd.read_csv(os.path.join(csv_direc, csv_to_label), header = [0, 1]).dropna().reset_index(drop = True)
    
-    #implement a way to load investigation times from frame_values
-    frame_values_folder = os.path.join(main_dir, 'frame_values')
-    frame_val_to_label = filedialog.askopenfilename(initialdir = frame_values_folder, title = 'Select the corresponding frame_values file')
-    invest_times = pd.read_csv(os.path.join(frame_values_folder, frame_val_to_label))
+#     #implement a way to load investigation times from frame_values
+#     frame_values_folder = os.path.join(main_dir, 'frame_values')
+#     frame_val_to_label = filedialog.askopenfilename(initialdir = frame_values_folder, title = 'Select the corresponding frame_values file')
+#     invest_times = pd.read_csv(os.path.join(frame_values_folder, frame_val_to_label))
 
 
-    export_labelled_frames(df, video_to_label_path, frame_val = invest_times['0'].values, output_dir = os.path.join(main_dir, 'labelled_frames'))
-    labelled_frames_output = Label(root, text = """
+#     export_labelled_frames(df, video_to_label_path, frame_val = invest_times['0'].values, output_dir = os.path.join(main_dir, 'labelled_frames'))
+#     labelled_frames_output = Label(root, text = """
     
-    Frames have been labelled!
-    They are stored in the labelled frames directory in main analysis folder"""
+#     Frames have been labelled!
+#     They are stored in the labelled frames directory in main analysis folder"""
     
-    , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
+#     , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
-    ############# use FFmpeg to turn frames into movie, then delete the frames folder ##############
-    print(os.listdir(os.path.join(main_dir, 'labelled_frames'))[1])
-    vname = os.listdir(os.path.join(main_dir, 'labelled_frames'))[1]
-    ffmpeg_make_video(main_dir, os.path.join(main_dir, 'labelled_frames'), vname = vname)
+#     ############# use FFmpeg to turn frames into movie, then delete the frames folder ##############
+#     print(os.listdir(os.path.join(main_dir, 'labelled_frames'))[1])
+#     vname = os.listdir(os.path.join(main_dir, 'labelled_frames'))[1]
+#     ffmpeg_make_video(main_dir, os.path.join(main_dir, 'labelled_frames'), vname = vname)
 
 
-export_labelled_frames_btn = Button(tab_frame, text = '7: Label one video', command = export_frames_with_label).pack(side = 'left')
+# export_labelled_frames_btn = Button(tab_frame, text = '7: Label one video', command = export_frames_with_label).pack(side = 'left')
 
 
 def batch_videos():

@@ -34,15 +34,12 @@ def plot_heatmap_dark(coordinates, df, trial_frames):
 def plot_heatmap_convolved(coordinates, df, trial_frames):
     import numpy as np
     import matplotlib.pyplot as plt
-    from astropy.convolution import convolve
-    from astropy.convolution import Gaussian2DKernel
 
-    subset_df = df.loc[trial_frames[0]: trial_frames[1]]
+    trial = df.loc[trial_frames[0]:trial_frames[1]]
 
-    subset = subset_df[subset_df > 0]
+    subset = df[df['nose']['x'] > 0]
 
-    heatmap, xedges, yedges = np.histogram2d(subset['nose']['x'], subset['nose']['y'], bins = (1280, 720))
-
+    heatmap, xedges, yedges = np.histogram2d(subset['nose']['x'][trial_frames[0]:trial_frames[1]], subset['nose']['y'][trial_frames[0]:trial_frames[1]], bins = (1280, 720))
     fig, ax = plt.subplots(1,1,figsize=(5,3))
     ax.imshow(np.rot90(convolve(heatmap, Gaussian2DKernel(x_stddev=30))), interpolation='nearest', cmap = 'viridis')
 
