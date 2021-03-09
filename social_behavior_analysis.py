@@ -58,7 +58,7 @@ tab_frame.grid(padx = 10, pady = 10, sticky='nsew')
 ######### Setting Root Title and font parameters #########
 
 root.title('Home Page')
-mouse = Image.open('images\\mouse.jpg')
+mouse = Image.open('images\\title_screen.jpg')
 mouse = mouse.resize((1600, 500), Image.ANTIALIAS)
 test = ImageTk.PhotoImage(mouse)
 font_style_big = tkFont.Font(family="Lucida Grande", size=50)
