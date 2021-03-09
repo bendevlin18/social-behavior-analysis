@@ -60,15 +60,11 @@ tab_frame.grid(padx = 10, pady = 10, sticky='nsew')
 root.title('Home Page')
 mouse = Image.open('images\\title_screen.jpg')
 mouse = mouse.resize((1600, 500), Image.ANTIALIAS)
-test = ImageTk.PhotoImage(mouse)
+title_page = ImageTk.PhotoImage(mouse)
 font_style_big = tkFont.Font(family="Lucida Grande", size=50)
 font_style_small = tkFont.Font(family="Lucida Grande", size=5)
-main_page_label = Label(header_frame, text = 'Welcome to social behavior analysis', font = font_style_big, image = test).grid(row = 0, column = 0, sticky='nsew')
+main_page_label = Label(header_frame,  image = title_page).grid(row = 0, column = 0, sticky='nsew')
 
-
-
-# label1 = tkinter.Label(image=test)
-# label1.image = test
 
 ######### Button for grabbing the main analysis directory #########
 
@@ -187,12 +183,18 @@ def create_coord_window():
     extra_coords = {'x_outer': x_outer, 'x_center': x_center, 'y_outer': y_outer, 'y_center': y_center, 'x_chamber': x_chamber, 'y_chamber': y_chamber}
     
     if possible_places:
+        plot_coordinates_frame(grab_video_frame(v_location), coordinates)
+        coord_img = Image.open('example_coordinates.jpg')
+        coord_plot = ImageTk.PhotoImage(coordinate_img)
         coordinate_output = Label(root, text = """
         
         Coordinates Imported Successfully!
         If they need adjusted, just redo step 1!"""
         
-        , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
+        , font = font_style_big, image = coord_plot
+        
+        
+        ).grid(row = 0, column = 0, sticky='nsew')
         coordinates = [possible_places, extra_coords]
 
         plot_coordinates_frame(grab_video_frame(v_location), coordinates)
