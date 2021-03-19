@@ -72,6 +72,5 @@ def plot_coordinates_frame(frame, coordinates):
 		plt.xlim(0,1280)
 		plt.ylim(0,720)
 		plt.title('Example Coordinate Overlay - Press q to quit')
-		plt.save_fig('example_coordinates.jpg')
 		plt.show()
 ###Annotation.py######## end

@@ -183,21 +183,18 @@ def create_coord_window():
     extra_coords = {'x_outer': x_outer, 'x_center': x_center, 'y_outer': y_outer, 'y_center': y_center, 'x_chamber': x_chamber, 'y_chamber': y_chamber}
     
     if possible_places:
+        coordinates = [possible_places, extra_coords]
         plot_coordinates_frame(grab_video_frame(v_location), coordinates)
-        coord_img = Image.open('example_coordinates.jpg')
-        coord_plot = ImageTk.PhotoImage(coordinate_img)
         coordinate_output = Label(root, text = """
         
         Coordinates Imported Successfully!
         If they need adjusted, just redo step 1!"""
         
-        , font = font_style_big, image = coord_plot
+        , font = font_style_big,
         
         
         ).grid(row = 0, column = 0, sticky='nsew')
-        coordinates = [possible_places, extra_coords]
-
-        plot_coordinates_frame(grab_video_frame(v_location), coordinates)
+        
 
 main_coord_import_btn = Button(tab_frame, text = 'Import Coordinates/ROIs', command = create_coord_window).pack(side = 'left')
 
@@ -211,8 +208,10 @@ def prep_time_df():
     
     df_times = pd.read_csv(os.path.join(main_dir, df_times_filename))
 
+    experiment_type = simpledialog.askstring('Choose behavior type', 'Which behavior? "Social", "Novel", or "Both"')
+
     ## adjusting the timedf with time_df function to calculate start and stop frames
-    df_times = time_df(df_times, v_location)
+    df_times = time_df(df_times, v_location, experiment_type)
 
     times_output = Label(root, text = """
     
@@ -232,6 +231,13 @@ def preprocess_df():
 
     print('Now preprocessing and smoothing the raw DLC output')
     global processed_csv_output_folder
+
+
+    preprocess_csv_output = Label(root, text = """
+    Now preprocessing the csvs
+    Check terminal for progress
+    """
+    , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
     if not os.path.exists(os.path.join(main_dir, 'smoothed_csv_output')):
         os.mkdir(os.path.join(main_dir, 'smoothed_csv_output'))

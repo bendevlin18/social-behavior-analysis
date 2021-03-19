@@ -31,6 +31,9 @@ def increment_average(two_vals, inc_len):
 
 #add additional argument to set the uncertainty to be set whatever you want
 def process_csv(df):
+
+	import pandas as pd
+	
 	### need to define a list of all the bodyparts and the two coordinates
 	bodyparts = ['nose', 'right ear', 'left ear', 'tail']
 	coordinates = ['x', 'y']
@@ -48,7 +51,7 @@ def process_csv(df):
 				except:
 					pass
 
-	df.set_index(df.columns[0], inplace = True)
+	df.set_index(pd.RangeIndex(stop = len(df)), inplace = True)
 
 	return df
 
