@@ -41,7 +41,7 @@ def plot_heatmap_convolved(coordinates, df, trial_frames):
 
     subset = subset_df[subset_df > 0]
 
-    heatmap, xedges, yedges = np.histogram2d(subset['nose']['x'], subset['nose']['y'], bins = (1280, 720))
+    heatmap, xedges, yedges = np.histogram2d(np.isfinite(subset['nose']['x']), np.isfinite(subset['nose']['y']), bins = (1280, 720))
 
     fig, ax = plt.subplots(1,1,figsize=(5,3))
     ax.imshow(np.rot90(convolve(heatmap, Gaussian2DKernel(x_stddev=30))), interpolation='nearest', cmap = 'viridis')

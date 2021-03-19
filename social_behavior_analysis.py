@@ -232,13 +232,6 @@ def preprocess_df():
     print('Now preprocessing and smoothing the raw DLC output')
     global processed_csv_output_folder
 
-
-    preprocess_csv_output = Label(root, text = """
-    Now preprocessing the csvs
-    Check terminal for progress
-    """
-    , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
-
     if not os.path.exists(os.path.join(main_dir, 'smoothed_csv_output')):
         os.mkdir(os.path.join(main_dir, 'smoothed_csv_output'))
         
@@ -339,12 +332,9 @@ def total_distance_travelled():
 
     for i in range(len(df_times)):
 
-        label = Label(root, text= str('Analyzing video ' + str(int(i)) + ' of ' + str(len(df_times))))
-        label.pack()
-
         print('Analyzing video ' + str(int(i)) + ' of ' + str(len(df_times)))
 
-        df = pd.read_csv(os.path.join(csv_direc, df_times['VideoName'][i] + video_suffix), header = [1, 2], index_col = 0)
+        df = pd.read_csv(os.path.join(csv_direc, df_times['VideoName'][i] + video_suffix), header = [0,1], index_col = 0)
 
         int_time_df = df.loc[df_times['Start' + behavior_type + 'Frames'][i]:df_times['Stop' + behavior_type + 'Frames'][i]]
 
@@ -353,7 +343,7 @@ def total_distance_travelled():
         distances = [0] * len(int_time_df)
         count = 0
 
-        for row in range(len(int_time_df)-2):
+        for row in tqdm(range(len(int_time_df)-2)):
             count = count + 1
             distances[count] = (dist_formula(int_time_df['nose']['x'].loc[row+1], int_time_df['nose']['x'].loc[row], int_time_df['nose']['y'].loc[row+1], int_time_df['nose']['y'].loc[row]))
 
