@@ -361,28 +361,38 @@ distance_travelled_btn = Button(tab_frame, text = 'Calculate total distance trav
 
 def batch_videos():
     for i in range(len(df_times)):
-        ## now we should input each video in, make frames, and make a video, then start over
-        video_to_label_path = os.path.join(v_location, str(df_times['VideoName'][i] + '.mp4'))
 
-        ## get the coordinate dataframe
-        csv_direc = os.path.join(main_dir, processed_csv_output_folder)
-        first_vid = os.listdir(csv_direc)[0]
-        video_suffix_start = first_vid.index("DLC")
-        video_suffix = first_vid[video_suffix_start: len(first_vid)]
-        csv_to_label = os.path.join(processed_csv_output_folder, str(df_times['VideoName'][i] + video_suffix))
-        df = pd.read_csv(csv_to_label, header = [0, 1]).dropna().reset_index(drop = True)
-        
-        ## load investigation times from frame_values
-        frame_values_folder = os.path.join(main_dir, 'frame_values')
-        frame_val_to_label = os.path.join(frame_values_folder, str(df_times['VideoName'][i] + '_frame_val.csv'))
-        invest_times = pd.read_csv(os.path.join(frame_values_folder, frame_val_to_label))
+        print(os.path.join(main_dir, 'labelled_frames', df_times['VideoName'][i] + '.mp4'))
 
-        ## now we are labelling the frames
-        export_labelled_frames(df, video_to_label_path, frame_val = invest_times['0'].values, output_dir = os.path.join(main_dir, 'labelled_frames'))
+        if os.path.exists(os.path.join(main_dir, 'labelled_videos', df_times['VideoName'][i] + '.mp4')):
+            print(df_times['VideoName'][i] + ' already made!')
 
-        ## finally, use ffmpeg to build the video from frames, and delete the frames
-        vname = os.listdir(os.path.join(main_dir, 'labelled_frames'))[1]
-        ffmpeg_make_video(main_dir, os.path.join(main_dir, 'labelled_frames'), vname = df_times['VideoName'][i])
+        else:
+
+            print('Making ' + df_times['VideoName'][i])
+            ## now we should input each video in, make frames, and make a video, then start over
+            video_to_label_path = os.path.join(v_location, str(df_times['VideoName'][i] + '.mp4'))
+
+            ## get the coordinate dataframe
+            csv_direc = os.path.join(main_dir, processed_csv_output_folder)
+            first_vid = os.listdir(csv_direc)[0]
+            video_suffix_start = first_vid.index("DLC")
+            video_suffix = first_vid[video_suffix_start: len(first_vid)]
+            csv_to_label = os.path.join(processed_csv_output_folder, str(df_times['VideoName'][i] + video_suffix))
+            df = pd.read_csv(csv_to_label, header = [0, 1]).dropna().reset_index(drop = True)
+            
+            ## load investigation times from frame_values
+            frame_values_folder = os.path.join(main_dir, 'frame_values')
+            frame_val_to_label = os.path.join(frame_values_folder, str(df_times['VideoName'][i] + '_frame_val.csv'))
+            invest_times = pd.read_csv(os.path.join(frame_values_folder, frame_val_to_label))
+
+            ## now we are labelling the frames
+            export_labelled_frames(df, video_to_label_path, frame_val = invest_times['0'].values, output_dir = os.path.join(main_dir, 'labelled_frames'))
+
+            ## finally, use ffmpeg to build the video from frames, and delete the frames
+
+            vname = os.listdir(os.path.join(main_dir, 'labelled_frames'))[1]
+            ffmpeg_make_video(main_dir, os.path.join(main_dir, 'labelled_frames'), vname = df_times['VideoName'][i])
 
 make_video_from_frames_btn = Button(tab_frame, text = 'Make labelled videos', command = batch_videos).pack(side = 'left')
 
@@ -398,28 +408,40 @@ def show_heatmaps():
     behavior_type = simpledialog.askstring('Choose behavior type', 'Which behavior would you like to analyze? (Social or Novel)')
 
     if not os.path.exists(os.path.join(main_dir, behavior_type + '_heatmaps')):
-        os.mkdir(os.path.join(main_dir, behavior_type + '_heatmaps'))
+        os.mkdir(os.path.join(main_dir, behavior_type + '_heatmaps'))  
+
+    print('Now creating the heatmaps. This may take a minute...')
 
 
     ## loop through the list of videos and plot a heatmap on them
     for i in range(len(videos)):
-        if 'csv' in videos[i]:
-            df = pd.read_csv(os.path.join(main_dir, processed_csv_output_folder, videos[i]), header = [0, 1]).dropna()
 
-            trial_frames = (df_times['Start' + behavior_type + 'Frames'][i], df_times['Stop' + behavior_type + 'Frames'][i])
-
-            plot_heatmap_convolved(coordinates, df, trial_frames)
-
-            plt.savefig(os.path.join(main_dir, behavior_type + '_heatmaps', videos[i] + '.png'))
-            print(videos[i] + ' heatmap saved!')
-            plt.close()
-
-        heatmap_output = Label(root, text = """
         
-        All Finished! 
-        Heatmaps are now saved in the heatmaps folder in the main analysis directory"""
-        
-        , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
+        if os.path.exists(os.path.join(main_dir, behavior_type + '_heatmaps', videos[i] + '.png')):
+            print(videos[i] + ' already made!')
+            pass
+
+        else:
+            if 'csv' in videos[i]:
+                df = pd.read_csv(os.path.join(main_dir, processed_csv_output_folder, videos[i]), header = [0, 1]).dropna()
+
+                trial_frames = (df_times['Start' + behavior_type + 'Frames'][i], df_times['Stop' + behavior_type + 'Frames'][i])
+                
+                try:
+                    plot_heatmap_convolved(coordinates, df, trial_frames)
+
+                    plt.savefig(os.path.join(main_dir, behavior_type + '_heatmaps', videos[i] + '.png'))
+                    print(videos[i] + ' heatmap saved!')
+                    plt.close()
+
+                except:
+                    print('There was something wrong with: ' + videos[i] + ' :(')
+                    pass
+                
+            heatmap_output = Label(root, text = """
+            All Finished!
+            Heatmaps are now saved in the heatmaps folder in the main analysis directory"""
+            , font = font_style_big).grid(row = 0, column = 0, sticky='nsew')
 
 
 main_heatmap_generator_btn = Button(tab_frame, text = 'Create Heatmaps', command = show_heatmaps).pack(side = 'left')
