@@ -61,11 +61,11 @@ def ffmpeg_make_video(main_dir, labelled_frames_direc, vname, clear_dir = True):
 		os.mkdir(video_output_dir)
 
 	if sys.platform == 'win32':
-		subprocess.call('ffmpeg -framerate 30 -i ' +  labelled_frames_direc + '\\frame_%01d.png ' +  video_output_dir + '\\' + vname + '.mp4', shell = True)
+		subprocess.call('ffmpeg -framerate 30 -i ' +  labelled_frames_direc + '\\frame_%01d.png ' +  video_output_dir + '\\' + vname.replace(" ", "") + '.mp4', shell = True)
 	
 	#### CHANGE THIS TO MAC CONVENTION
 	elif sys.platform == 'darwin':
-		subprocess.call('ffmpeg -framerate 30 -i ' +  labelled_frames_direc + '/frame_%01d.png ' +  video_output_dir + '/' + vname + '.mp4', shell = True)
+		subprocess.call('ffmpeg -framerate 30 -i ' +  labelled_frames_direc + '/frame_%01d.png ' +  video_output_dir + '/' + vname.replace(" ", "") + '.mp4', shell = True)
 
 	### clearing all the images from the hard drive
 	pngs = os.listdir(labelled_frames_direc)
