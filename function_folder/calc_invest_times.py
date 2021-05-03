@@ -65,10 +65,14 @@ def calculate_investigation_times(df, possible_places, extra_coords):
 			arr[row][j] = check_coords(df[bodyparts[j]][['x', 'y']].loc[row].values, possible_places)
 			
 	print('Array Constructed!')
-
+	
+	## the order is the order of possible_places: {'x_zone', 'y_zone', 'left_side', 'middle', 'right_side'} ##
 	### set which patterns mean x vs y investigation, only for the first three bodyparts (nose and ears, cuz we don't care about tail base yet)
 	x_inv = np.array([[1., 0., 1., 0., 0.]])
 	y_inv = np.array([[0., 1., 0., 0., 1.]])
+	left_side = np.array([[0., 0., 1., 0., 0.]])
+	right_side = np.array([[0., 0., 0., 0., 1.]])
+	middle = np.array([[0., 0., 0., 1., 0.]])
 
 	### now we want to check each frame in our array, and create a frame_val array that holds info about where the mouse's head was detected
 	z = -1
@@ -78,16 +82,33 @@ def calculate_investigation_times(df, possible_places, extra_coords):
 		comparison_x = arr[frame][0:1] == x_inv
 		comparison_y = arr[frame][0:1] == y_inv
 
-		if comparison_x.all() == True:
-			if check_orientation(df, z, extra_coords) == 'oriented':
-				frame_val[z] = 'X Investigation'
-			elif check_orientation(df, z, extra_coords) == 'not_oriented':
-				frame_val[z] = 'X Close'
-		elif comparison_y.all() == True:
-			if check_orientation(df, z, extra_coords) == 'oriented':
-				frame_val[z] = 'Y Investigation'
-			elif check_orientation(df, z, extra_coords) == 'not_oriented':
-				frame_val[z] = 'Y Close'
+		comparison_left = arr[frame][0:1] == left_side
+		comparison_right = arr[frame][0:1] == right_side
+		comparison_middle = arr[frame][0:1] == middle
+
+		if comparison_left[0][2] == True:
+			if comparison_x.all() == True:
+				if check_orientation(df, z, extra_coords) == 'oriented':
+					frame_val[z] = 'X Investigation'
+				elif check_orientation(df, z, extra_coords) == 'not_oriented':
+					frame_val[z] = 'X Close'
+			else: 
+				frame_val[z] = 'Left Side'
+
+
+		elif comparison_right[0][4] == True:
+			if comparison_y.all() == True:
+				if check_orientation(df, z, extra_coords) == 'oriented':
+					frame_val[z] = 'Y Investigation'
+				elif check_orientation(df, z, extra_coords) == 'not_oriented':
+					frame_val[z] = 'Y Close'
+			else:
+				frame_val[z] = 'Right Side'
+
+
+		elif comparison_middle[0][3] == True:
+			frame_val[z] = 'Middle'
+
 		else:
 			frame_val[z] = 'Somewhere else'
 		
