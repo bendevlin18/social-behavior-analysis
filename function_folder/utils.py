@@ -59,6 +59,6 @@ def check_climbing(df, coords):
 def dist_formula(x1, y1, x2, y2):
     import numpy as np
 
-    d = np.sqrt((x2 + x1)**2 + (y2 - y1)**2)
+    d = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
     return d
